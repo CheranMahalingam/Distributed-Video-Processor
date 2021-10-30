@@ -24,4 +24,6 @@
 *.out
 *.app
 
-.vscode/*
+.vscode
+
+build

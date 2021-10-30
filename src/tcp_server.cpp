@@ -82,7 +82,7 @@ class tcp_server
 public:
     tcp_server(boost::asio::io_context& io_context)
         : io_context_(io_context),
-          acceptor_(io_context, tcp::endpoint(boost::asio::ip::make_address("127.0.0.1"), 1300)),//tcp::v6(), 1300))
+          acceptor_(io_context, tcp::endpoint(boost::asio::ip::make_address("127.0.0.1"), 1300)),
           connections_({})
     {
         start_accept();
