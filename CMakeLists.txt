@@ -56,31 +56,31 @@ set(_PROTOBUF_PROTOC $<TARGET_FILE:protoc>)
 set(_PROTOBUF_LIBPROTOBUF $<TARGET_FILE:protoc>)
 set(_GRPC_CPP_PLUGIN_EXECUTABLE $<TARGET_FILE:grpc_cpp_plugin>)
 
-get_filename_component(video_proto "protos/video.proto" ABSOLUTE)
-get_filename_component(video_proto_path "${video_proto}" PATH)
+get_filename_component(raft_proto "protos/raft.proto" ABSOLUTE)
+get_filename_component(raft_proto_path "${raft_proto}" PATH)
 
-set(video_proto_srcs "${PROJECT_SOURCE_DIR}/protogen/video.pb.cc")
-set(video_proto_hdrs "${PROJECT_SOURCE_DIR}/protogen/video.pb.h")
-set(video_grpc_srcs "${PROJECT_SOURCE_DIR}/protogen/video.grpc.pb.cc")
-set(video_grpc_hdrs "${PROJECT_SOURCE_DIR}/protogen/video.grpc.pb.h")
+set(raft_proto_srcs "${PROJECT_SOURCE_DIR}/protogen/raft.pb.cc")
+set(raft_proto_hdrs "${PROJECT_SOURCE_DIR}/protogen/raft.pb.h")
+set(raft_grpc_srcs "${PROJECT_SOURCE_DIR}/protogen/raft.grpc.pb.cc")
+set(raft_grpc_hdrs "${PROJECT_SOURCE_DIR}/protogen/raft.grpc.pb.h")
 add_custom_command(
-    OUTPUT "${video_proto_srcs}" "${video_proto_hdrs}" "${video_grpc_srcs}" "${video_grpc_hdrs}"
+    OUTPUT "${raft_proto_srcs}" "${raft_proto_hdrs}" "${raft_grpc_srcs}" "${raft_grpc_hdrs}"
     COMMAND ${_PROTOBUF_PROTOC}
     ARGS --grpc_out "${PROJECT_SOURCE_DIR}/protogen"
         --cpp_out "${PROJECT_SOURCE_DIR}/protogen"
-        -I "${video_proto_path}"
+        -I "${raft_proto_path}"
         --plugin=protoc-gen-grpc="${_GRPC_CPP_PLUGIN_EXECUTABLE}"
-        "${video_proto}"
-    DEPENDS "${video_proto}")
+        "${raft_proto}"
+    DEPENDS "${raft_proto}")
 
 include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 
-add_library(video_grpc_proto
-    ${video_grpc_srcs}
-    ${video_grpc_hdrs}
-    ${video_proto_srcs}
-    ${video_proto_hdrs})
-target_link_libraries(video_grpc_proto
+add_library(raft_grpc_proto
+    ${raft_grpc_srcs}
+    ${raft_grpc_hdrs}
+    ${raft_proto_srcs}
+    ${raft_proto_hdrs})
+target_link_libraries(raft_grpc_proto
     ${_REFLECTION}
     ${_GRPC_GRPCPP}
     ${_PROTOBUF_LIBPROTOBUF})
@@ -89,7 +89,7 @@ foreach(_target
     async_server async_client)
     add_executable(${_target} "src/${_target}.cpp")
     target_link_libraries(${_target}
-        video_grpc_proto
+        raft_grpc_proto
         ${_REFLECTION}
         ${_GRPC_GRPCPP}
         ${_PROTOBUF_LIBPROTOBUF})
