@@ -33,7 +33,7 @@ public:
 
     ConcensusModule(boost::asio::io_context& io_context, int id, std::vector<int> peer_ids);
 
-    void RunElectionTimer(int term);
+    void ElectionCallback(int term);
 
     void StartElection();
 
@@ -43,13 +43,15 @@ public:
 
     void AppendEntries();
 
-    void SendHeartbeat();
+    void HeartbeatCallback();
 
     void PromoteToLeader();
 
     void ResetToFollower(int term);
 
-    int ElectionTimeout();
+    void ElectionTimeout(int term);
+
+    void HeartbeatTimeout();
 
     void Log();
 

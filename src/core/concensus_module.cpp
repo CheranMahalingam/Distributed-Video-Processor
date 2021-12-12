@@ -7,13 +7,10 @@ namespace raft {
 ConcensusModule::ConcensusModule(boost::asio::io_context& io_context, int id, std::vector<int> peer_ids)
     : io_(io_context), election_timer_(io_), heartbeat_timer_(io_), current_term_(0),
         state_(ElectionRole::Follower), vote_(-1), id_(id), peer_ids_(peer_ids) {
-            RunElectionTimer(0);
+            ElectionTimeout(0);
 }
 
-void ConcensusModule::RunElectionTimer(int term) {
-    int timeout_duration = ElectionTimeout();
-    election_timer_.expires_from_now(std::chrono::milliseconds(timeout_duration));
-
+void ConcensusModule::ElectionCallback(int term) {
     if (state_ != ElectionRole::Candidate && state_ != ElectionRole::Follower) {
         return;
     }
@@ -23,8 +20,6 @@ void ConcensusModule::RunElectionTimer(int term) {
     }
 
     StartElection();
-
-    //election_timer_.async_wait(boost::bind(RunElectionTimer, current_term_));
 }
 
 void ConcensusModule::StartElection() {
@@ -62,10 +57,14 @@ void ConcensusModule::StartElection() {
     }
 
     // If election was unsuccessful restart election process
-    election_timer_.async_wait(boost::bind(RunElectionTimer, current_term_));
+    ElectionTimeout(current_term_);
 }
 
-void ConcensusModule::SendHeartbeat() {
+void ConcensusModule::HeartbeatCallback() {
+    if (state_ != ElectionRole::Leader) {
+        return;
+    }
+
     int saved_term = current_term_;
 
     for (auto peer_id:peer_ids_) {
@@ -78,24 +77,32 @@ void ConcensusModule::SendHeartbeat() {
         }
     }
 
-    heartbeat_timer_.async_wait(SendHeartbeat);
+    HeartbeatTimeout();
 }
 
 void ConcensusModule::PromoteToLeader() {
     state_ = ElectionRole::Leader;
 
-    heartbeat_timer_.async_wait(SendHeartbeat);
+    HeartbeatTimeout();
 }
 
 void ConcensusModule::ResetToFollower(int term) {
     state_ = ElectionRole::Follower;
     current_term_ = term;
     vote_ = -1;
-    election_timer_.async_wait(boost::bind(RunElectionTimer, current_term_));
+
+    ElectionTimeout(term);
 }
 
-int ConcensusModule::ElectionTimeout() {
-    return std::rand() % 151 + 150;
+void ConcensusModule::ElectionTimeout(int term) {
+    int random_timeout = std::rand() % 151 + 150;
+    election_timer_.expires_from_now(std::chrono::milliseconds(random_timeout));
+    election_timer_.async_wait(boost::bind(ElectionCallback, term));
+}
+
+void ConcensusModule::HeartbeatTimeout() {
+    heartbeat_timer_.expires_from_now(std::chrono::milliseconds(50));
+    heartbeat_timer_.async_wait(HeartbeatCallback);
 }
 
 }
