@@ -4,6 +4,22 @@
 #include <boost/asio.hpp>
 #include <vector>
 
+#include "server.h"
+#include "raft.grpc.pb.h"
+
+using grpc::Server;
+using grpc::ServerBuilder;
+using grpc::ServerContext;
+using grpc::Status;
+using grpc::ClientContext;
+using grpc::Channel;
+
+using rpc::RaftService;
+using rpc::RequestVoteRequest;
+using rpc::RequestVoteResponse;
+using rpc::AppendEntriesRequest;
+using rpc::AppendEntriesResponse;
+
 namespace raft {
 
 class ConcensusModule {
@@ -15,17 +31,15 @@ public:
         Dead
     };
 
-    ConcensusModule(boost::asio::io_context& io_context);
+    ConcensusModule(boost::asio::io_context& io_context, int id, std::vector<int> peer_ids);
 
-    ~ConcensusModule();
-
-    void RunElectionTimer();
+    void RunElectionTimer(int term);
 
     void StartElection();
 
     void Stop();
 
-    void RequestVote();
+    void RequestVote(const rpc::RequestVoteRequest& args, rpc::RequestVoteResponse* reply);
 
     void AppendEntries();
 
@@ -34,6 +48,10 @@ public:
     void PromoteToLeader();
 
     void ResetToFollower(int term);
+
+    int ElectionTimeout();
+
+    void Log();
 
 private:
     int id_;
@@ -44,6 +62,7 @@ private:
     ElectionRole state_;
     boost::asio::io_context& io_;
     boost::asio::steady_timer election_timer_;
+    boost::asio::steady_timer heartbeat_timer_;
 };
 
 }
