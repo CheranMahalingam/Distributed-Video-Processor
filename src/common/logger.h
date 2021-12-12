@@ -1,19 +1,18 @@
 #ifndef LOGGER_H
 #define LOGGER_H
 
-#include <iostream>
 #include <sstream>
 
 class Logger {
 public:
     enum class LogLevel {
-        error,
-        warning,
-        info,
-        debug
+        Error,
+        Warning,
+        Info,
+        Debug
     };
 
-    Logger(LogLevel level = LogLevel::error);
+    Logger(LogLevel level = LogLevel::Error);
 
     ~Logger();
 

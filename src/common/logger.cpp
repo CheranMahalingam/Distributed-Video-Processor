@@ -1,8 +1,8 @@
-#include <string>
+#include <iostream>
 
 #include "logger.h"
 
-Logger::Logger(LogLevel level = LogLevel::error)
+Logger::Logger(LogLevel level = LogLevel::Error)
     : level_(level) {}
 
 Logger::~Logger() {

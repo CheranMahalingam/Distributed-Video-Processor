@@ -3,8 +3,11 @@
 
 #include <boost/asio.hpp>
 #include <vector>
+#include <string>
+#include <utility>
 
 #include "server.h"
+#include "logger.h"
 #include "raft.grpc.pb.h"
 
 using grpc::Server;
@@ -37,7 +40,7 @@ public:
 
     void StartElection();
 
-    void Stop();
+    void Shutdown();
 
     void RequestVote(const rpc::RequestVoteRequest& args, rpc::RequestVoteResponse* reply);
 
@@ -53,7 +56,8 @@ public:
 
     void HeartbeatTimeout();
 
-    void Log();
+    template<typename ...Args>
+    void Log(Args&&... args);
 
 private:
     int id_;
@@ -65,6 +69,7 @@ private:
     boost::asio::io_context& io_;
     boost::asio::steady_timer election_timer_;
     boost::asio::steady_timer heartbeat_timer_;
+    Logger log_;
 };
 
 }
