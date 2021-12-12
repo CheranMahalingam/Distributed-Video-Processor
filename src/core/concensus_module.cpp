@@ -68,7 +68,7 @@ void ConcensusModule::HeartbeatCallback() {
     int saved_term = current_term_;
 
     for (auto peer_id:peer_ids_) {
-        // Make requesst append entries call and get reply
+        // Make request append entries call and get reply
         int reply_term = current_term_;
     
         if (reply_term > saved_term) {

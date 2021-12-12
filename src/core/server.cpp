@@ -8,7 +8,7 @@ Server::Server(int id, std::vector<int>& peer_ids)
     cm_ = std::unique_ptr<ConcensusModule>(new ConcensusModule(io_context, id, peer_ids));
 }
 
-void ConnectToPeer(int peer_id) {
+void Server::ConnectToPeer(int peer_id) {
 
 }
 
