@@ -2,26 +2,15 @@
 #define CONSENSUS_MODULE_H
 
 #include <boost/asio.hpp>
+#include <grpc++/grpc++.h>
 #include <vector>
 #include <string>
 #include <utility>
+#include <tuple>
 
 #include "server.h"
 #include "logger.h"
 #include "raft.grpc.pb.h"
-
-using grpc::Server;
-using grpc::ServerBuilder;
-using grpc::ServerContext;
-using grpc::Status;
-using grpc::ClientContext;
-using grpc::Channel;
-
-using rpc::RaftService;
-using rpc::RequestVoteRequest;
-using rpc::RequestVoteResponse;
-using rpc::AppendEntriesRequest;
-using rpc::AppendEntriesResponse;
 
 namespace raft {
 
@@ -34,25 +23,25 @@ public:
         Dead
     };
 
-    ConcensusModule(boost::asio::io_context& io_context, int id, std::vector<int> peer_ids);
+    ConcensusModule(int id, boost::asio::io_context& io_context, std::vector<std::string> peer_ids);
 
-    void ElectionCallback(int term);
+    void ElectionCallback(const int term);
 
     void StartElection();
 
     void Shutdown();
 
-    void RequestVote(const rpc::RequestVoteRequest& args, rpc::RequestVoteResponse* reply);
+    std::tuple<int, bool> RequestVote(const std::string peer_id, const int term);
 
-    void AppendEntries();
+    std::tuple<int, bool> AppendEntries(const std::string peer_id, const int term);
 
     void HeartbeatCallback();
 
     void PromoteToLeader();
 
-    void ResetToFollower(int term);
+    void ResetToFollower(const int term);
 
-    void ElectionTimeout(int term);
+    void ElectionTimeout(const int term);
 
     void HeartbeatTimeout();
 
@@ -61,7 +50,7 @@ public:
 
 private:
     int id_;
-    std::vector<int> peer_ids_;
+    std::vector<std::string> peer_ids_;
     int current_term_;
     int vote_;
     std::vector<int> log_;
@@ -70,6 +59,7 @@ private:
     boost::asio::steady_timer election_timer_;
     boost::asio::steady_timer heartbeat_timer_;
     Logger log_;
+    std::unordered_map<std::string, std::unique_ptr<rpc::RaftService::Stub>> stubs_;
 };
 
 }

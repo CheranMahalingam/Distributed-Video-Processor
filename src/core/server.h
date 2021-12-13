@@ -4,6 +4,7 @@
 #include <vector>
 #include <unordered_map>
 #include <memory>
+#include <string>
 
 #include "concensus_module.h"
 
@@ -11,7 +12,9 @@ namespace raft {
 
 class Server {
 public:
-    Server(int id, std::vector<int>& peer_ids);
+    Server(std::string address, std::vector<std::string>& peer_ids);
+
+    ~Server();
 
     void ConnectToPeer(int peer_id);
 
@@ -19,9 +22,12 @@ public:
 
     void AppendEntries();
 
+    static int current_id;
+
 private:
-    int server_id_;
-    std::vector<int> peer_ids_;
+    int id_;
+    std::string address_;
+    std::vector<std::string> peer_ids_;
     std::unique_ptr<ConcensusModule> cm_;
 };
 
