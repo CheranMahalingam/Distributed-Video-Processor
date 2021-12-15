@@ -8,7 +8,7 @@
 #include <utility>
 #include <tuple>
 
-#include "server.h"
+#include "node.h"
 #include "logger.h"
 #include "raft.grpc.pb.h"
 

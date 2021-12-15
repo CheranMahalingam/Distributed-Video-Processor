@@ -1,4 +1,4 @@
-#include "server.h"
+#include "node.h"
 
 namespace raft {
 

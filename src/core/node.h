@@ -1,5 +1,5 @@
-#ifndef SERVER_H
-#define SERVER_H
+#ifndef NODE_H
+#define NODE_H
 
 #include <vector>
 #include <unordered_map>
@@ -7,6 +7,7 @@
 #include <string>
 
 #include "concensus_module.h"
+#include "async_server.h"
 
 namespace raft {
 
@@ -18,9 +19,9 @@ public:
 
     void ConnectToPeer(int peer_id);
 
-    void RequestVote();
+    void OnRequestVote();
 
-    void AppendEntries();
+    void OnAppendEntries();
 
     static int current_id;
 
@@ -29,6 +30,7 @@ private:
     std::string address_;
     std::vector<std::string> peer_ids_;
     std::unique_ptr<ConcensusModule> cm_;
+    std::unique_ptr<AsyncServer> server_;
 };
 
 }
