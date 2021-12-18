@@ -1,7 +1,7 @@
-#include <boost/bind.hpp>
-
 #include "concensus_module.h"
 #include "logger.h"
+
+namespace raft {
 
 using grpc::Channel;
 using grpc::ClientContext;
@@ -9,12 +9,9 @@ using grpc::ClientAsyncResponseReader;
 using grpc::CompletionQueue;
 using grpc::Status;
 
-namespace raft {
-
-ConcensusModule::ConcensusModule(int id, boost::asio::io_context& io_context, std::vector<std::string> peer_ids)
+ConcensusModule::ConcensusModule(const int id, boost::asio::io_context& io_context, const std::vector<std::string>& peer_ids, Logger& logger)
     : io_(io_context), election_timer_(io_context), heartbeat_timer_(io_context), current_term_(0),
-        state_(ElectionRole::Follower), vote_(-1), id_(id), peer_ids_(peer_ids) {
-    Logger log_();
+        state_(ElectionRole::Follower), vote_(-1), id_(id), peer_ids_(peer_ids), log_(logger) {
     std::unordered_map<std::string, std::unique_ptr<rpc::RaftService::Stub>> stubs_;
     for (auto peer_id:peer_ids) {
         std::shared_ptr<Channel> chan = grpc::CreateChannel(peer_id, grpc::InsecureChannelCredentials());

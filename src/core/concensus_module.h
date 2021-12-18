@@ -2,6 +2,7 @@
 #define CONSENSUS_MODULE_H
 
 #include <boost/asio.hpp>
+#include <boost/bind.hpp>
 #include <grpc++/grpc++.h>
 #include <vector>
 #include <string>
@@ -23,7 +24,7 @@ public:
         Dead
     };
 
-    ConcensusModule(int id, boost::asio::io_context& io_context, std::vector<std::string> peer_ids);
+    ConcensusModule(const int id, boost::asio::io_context& io_context, const std::vector<std::string>& peer_ids, Logger& logger);
 
     void ElectionCallback(const int term);
 
@@ -58,7 +59,7 @@ private:
     boost::asio::io_context& io_;
     boost::asio::steady_timer election_timer_;
     boost::asio::steady_timer heartbeat_timer_;
-    Logger log_;
+    Logger& log_;
     std::unordered_map<std::string, std::unique_ptr<rpc::RaftService::Stub>> stubs_;
 };
 
