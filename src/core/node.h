@@ -41,7 +41,7 @@ private:
 
     class CallData {
     public:
-        CallData(rpc::RaftService::AsyncService* service, ServerCompletionQueue* scq);
+        CallData(rpc::RaftService::AsyncService* service, ServerCompletionQueue* scq, ConcensusModule* cm);
 
         virtual void Proceed();
     
@@ -53,13 +53,14 @@ private:
         };
         rpc::RaftService::AsyncService* service_;
         ServerCompletionQueue* scq_;
+        ConcensusModule* cm_;
         ServerContext ctx_;
         CallStatus status_;
     };
 
     class RequestVoteData : public CallData {
     public:
-        RequestVoteData(rpc::RaftService::AsyncService* service, ServerCompletionQueue* scq);
+        RequestVoteData(rpc::RaftService::AsyncService* service, ServerCompletionQueue* scq, ConcensusModule* cm);
 
         void Proceed() override;
     
@@ -72,7 +73,7 @@ private:
 
     class AppendEntriesData : public CallData {
     public:
-        AppendEntriesData(rpc::RaftService::AsyncService* service, ServerCompletionQueue* scq);
+        AppendEntriesData(rpc::RaftService::AsyncService* service, ServerCompletionQueue* scq, ConcensusModule* cm);
 
         void Proceed() override;
     

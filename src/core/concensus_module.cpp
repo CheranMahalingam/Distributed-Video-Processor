@@ -218,4 +218,8 @@ void Log(Args&&... args) {
     ((log_ << std::forward<Args>(args) << " "), ...)
 }
 
+int ConcensusModule::current_term() const {
+    return current_term_;
+}
+
 }

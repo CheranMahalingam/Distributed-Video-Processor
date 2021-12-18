@@ -49,6 +49,9 @@ public:
     template<typename ...Args>
     void Log(Args&&... args);
 
+public:
+    int current_term() const;
+
 private:
     int id_;
     std::vector<std::string> peer_ids_;
