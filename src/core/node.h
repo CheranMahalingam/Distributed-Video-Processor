@@ -8,7 +8,7 @@
 #include <grpc++/grpc++.h>
 
 #include "concensus_module.h"
-#include "logger.h"
+#include "log.h"
 #include "raft.grpc.pb.h"
 
 namespace raft {
@@ -27,7 +27,7 @@ public:
         AppendEntries
     };
 
-    Node(const std::string address, const std::vector<std::string>& peer_ids);
+    Node(const std::string address, const std::vector<std::string>& peer_ids, boost::asio::io_context& io_context);
 
     ~Node();
 
@@ -43,8 +43,8 @@ private:
     public:
         CallData(rpc::RaftService::AsyncService* service, ServerCompletionQueue* scq, ConcensusModule* cm);
 
-        virtual void Proceed();
-    
+        virtual void Proceed() = 0;
+
     protected:
         enum class CallStatus {
             Create,
@@ -92,8 +92,9 @@ private:
     rpc::RaftService::AsyncService service_;
     std::unique_ptr<ServerCompletionQueue> scq_;
     std::unique_ptr<Server> server_;
-    Logger log_;
-    std::unique_ptr<ConcensusModule> cm_;
+    //Log& log_;
+    boost::asio::io_context& io_;
+    std::shared_ptr<ConcensusModule> cm_;
 };
 
 }

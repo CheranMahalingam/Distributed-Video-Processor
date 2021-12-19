@@ -9,8 +9,7 @@
 #include <utility>
 #include <tuple>
 
-#include "node.h"
-#include "logger.h"
+#include "log.h"
 #include "raft.grpc.pb.h"
 
 namespace raft {
@@ -24,7 +23,7 @@ public:
         Dead
     };
 
-    ConcensusModule(const int id, boost::asio::io_context& io_context, const std::vector<std::string>& peer_ids, Logger& logger);
+    ConcensusModule(const int id, boost::asio::io_context& io_context, const std::vector<std::string>& peer_ids);
 
     void ElectionCallback(const int term);
 
@@ -55,14 +54,13 @@ public:
 private:
     int id_;
     std::vector<std::string> peer_ids_;
-    int current_term_;
-    int vote_;
-    std::vector<int> log_;
-    ElectionRole state_;
     boost::asio::io_context& io_;
     boost::asio::steady_timer election_timer_;
     boost::asio::steady_timer heartbeat_timer_;
-    Logger& log_;
+    int current_term_;
+    int vote_;
+    ElectionRole state_;
+    //Log& log_;
     std::unordered_map<std::string, std::unique_ptr<rpc::RaftService::Stub>> stubs_;
 };
 

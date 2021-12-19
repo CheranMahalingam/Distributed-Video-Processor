@@ -2,16 +2,15 @@
 
 namespace raft {
 
-Node::Node(const std::string address, const std::vector<std::string>& peer_ids)
-    : id_(current_id), log_(Logger()) {
+Node::Node(const std::string address, const std::vector<std::string>& peer_ids, boost::asio::io_context& io_context)
+    : id_(current_id), io_(io_context) {
     ServerBuilder builder;
     builder.AddListeningPort(address, grpc::InsecureServerCredentials());
     builder.RegisterService(&service_);
     scq_ = builder.AddCompletionQueue();
     server_ = builder.BuildAndStart();
 
-    boost::asio::io_context io_context;
-    cm_ = std::make_unique<ConcensusModule>(id_, io_context, peer_ids, log_);
+    cm_ = std::make_shared<ConcensusModule>(id_, io_, peer_ids);
     current_id++;
 }
 
@@ -19,6 +18,8 @@ Node::~Node() {
     server_->Shutdown();
     scq_->Shutdown();
 }
+
+int Node::current_id = 0;
 
 void Node::HandleRPC() {
     new RequestVoteData{&service_, scq_.get(), cm_.get()};
@@ -39,14 +40,13 @@ void Node::HandleRPC() {
                 }
             }
         } else {
-            log_ << "RPC call failed";
+            // log_ << "RPC call failed";
         }
     }
 }
 
 Node::CallData::CallData(rpc::RaftService::AsyncService* service, ServerCompletionQueue* scq, ConcensusModule* cm)
     : service_(service), scq_(scq), cm_(cm) {
-    Proceed();
 }
 
 Node::RequestVoteData::RequestVoteData(rpc::RaftService::AsyncService* service, ServerCompletionQueue* scq, ConcensusModule* cm) 

@@ -5,7 +5,7 @@ project(DistributedVideoProcessor LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin)
 
@@ -88,12 +88,14 @@ target_link_libraries(grpc_proto
     ${_GRPC_GRPCPP}
     ${_PROTOBUF_LIBPROTOBUF})
 
-foreach(_target
-    async_server async_client)
-    add_executable(${_target} "src/${_target}.cpp")
-    target_link_libraries(${_target}
-        grpc_proto
-        ${_REFLECTION}
-        ${_GRPC_GRPCPP}
-        ${_PROTOBUF_LIBPROTOBUF})
-endforeach()
+add_executable(VideoProcessor src/core/node.cpp src/core/concensus_module.cpp src/common/log.cpp)
+target_include_directories(VideoProcessor
+    PRIVATE
+    "${PROJECT_SOURCE_DIR}/src/common"
+    "${PROJECT_SOURCE_DIR}/src/core"
+    "${PROJECT_SOURCE_DIR}/protogen")
+target_link_libraries(VideoProcessor
+    grpc_proto
+    ${_REFLECTION}
+    ${_GRPC_GRPCPP}
+    ${_PROTOBUF_LIBPROTOBUF})
