@@ -40,7 +40,7 @@ void Node::HandleRPC() {
                 }
             }
         } else {
-            // log_ << "RPC call failed";
+            Log(LogLevel::Info) << "RPC call failed";
         }
     }
 }

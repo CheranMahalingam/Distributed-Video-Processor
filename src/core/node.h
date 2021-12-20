@@ -92,7 +92,6 @@ private:
     rpc::RaftService::AsyncService service_;
     std::unique_ptr<ServerCompletionQueue> scq_;
     std::unique_ptr<Server> server_;
-    //Log& log_;
     boost::asio::io_context& io_;
     std::shared_ptr<ConcensusModule> cm_;
 };

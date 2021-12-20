@@ -1,43 +1,24 @@
 #include "log.h"
 
-// Log::Log(LogLevel level)
-//     : level_(level) {}
-
-// Log::~Log() {
-//     buffer_ << std::endl;
-//     std::cerr << buffer_.str();
-// }
-
-// template <typename T> Log& Log::operator<<(T const& value) {
-//     buffer_ << value << " ";
-//     return *this;
-// }
-
 Log::Log(LogLevel level) : level_(level) {}
 
 Log::~Log() {
-    LoggerBuffer::Logger().Write(level_, buffer_.str());
+    LogBuffer::Logger().Write(level_, buffer_.str());
 }
 
-template <typename T>
-Log& Log::operator<<(T const& value) {
-    buffer_ << value << " ";
-    return *this;
-}
-
-LoggerBuffer& LoggerBuffer::Logger() {
-    static LoggerBuffer instance;
+LogBuffer& LogBuffer::Logger() {
+    static LogBuffer instance;
     return instance;
 }
 
-void LoggerBuffer::Write(LogLevel severity, std::string message) {
+void LogBuffer::Write(LogLevel severity, std::string message) {
     std::lock_guard<std::mutex> lockGuard(log_mutex_);
-    std::stringstream out;
-    out << Timestamp() << " " << Severity(severity) << ": " << message << std::endl;
-    std::cout << out.str();
+    std::cout << Timestamp() << " " << Severity(severity) << ": " << message << std::endl;
 }
 
-std::string Timestamp() {
+LogBuffer::LogBuffer() {}
+
+std::string LogBuffer::Timestamp() {
     std::time_t raw_time;
     std::time(&raw_time);
     std::tm* curr_time = std::gmtime(&raw_time);
@@ -47,7 +28,7 @@ std::string Timestamp() {
     return time_string;
 }
 
-std::string Severity(LogLevel severity) {
+std::string LogBuffer::Severity(LogLevel severity) {
     switch(severity) {
         case LogLevel::Error:
             return "Error";

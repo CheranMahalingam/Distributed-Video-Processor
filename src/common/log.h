@@ -7,29 +7,6 @@
 #include <mutex>
 #include <string>
 
-// class Log {
-// public:
-//     enum class LogLevel {
-//         Error,
-//         Warning,
-//         Info,
-//         Debug
-//     };
-
-//     Log(LogLevel level = LogLevel::Error);
-
-//     ~Log();
-
-//     std::string timestamp();
-
-//     template <typename T>
-//     Log& operator<<(T const& value);
-
-// private:
-//     std::ostringstream buffer_;
-//     LogLevel level_;
-// };
-
 enum class LogLevel {
     Error,
     Warning,
@@ -44,24 +21,27 @@ public:
     ~Log();
 
     template <typename T>
-    Log& operator<<(T const& value);
+    Log& operator<<(T const& value) {
+        buffer_ << value << " ";
+        return *this;
+    }
 
 private:
     LogLevel level_;
-    std::stringstream buffer_;
+    std::ostringstream buffer_;
 };
 
-class LoggerBuffer {
+class LogBuffer {
 public:
-    static LoggerBuffer& Logger();
+    static LogBuffer& Logger();
 
     void Write(LogLevel severity, std::string message);
 
 private:
-    // Make into singleton
-    LoggerBuffer();
-    LoggerBuffer(LoggerBuffer const&);
-    void operator=(LoggerBuffer const&);
+    // Make into singleton class
+    LogBuffer();
+    LogBuffer(LogBuffer const&);
+    void operator=(LogBuffer const&);
 
     std::string Timestamp();
 

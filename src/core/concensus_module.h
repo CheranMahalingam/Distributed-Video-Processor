@@ -45,9 +45,6 @@ public:
 
     void HeartbeatTimeout();
 
-    template<typename ...Args>
-    void Log(Args&&... args);
-
 public:
     int current_term() const;
 
@@ -60,7 +57,6 @@ private:
     int current_term_;
     int vote_;
     ElectionRole state_;
-    //Log& log_;
     std::unordered_map<std::string, std::unique_ptr<rpc::RaftService::Stub>> stubs_;
 };
 
