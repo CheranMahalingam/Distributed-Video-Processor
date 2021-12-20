@@ -19,6 +19,11 @@ Node::~Node() {
     scq_->Shutdown();
 }
 
+void Node::Run() {
+    Log(LogLevel::Info) << "Server created";
+    HandleRPC();
+}
+
 int Node::current_id = 0;
 
 void Node::HandleRPC() {

@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(DistributedVideoProcessor LANGUAGES CXX)
+project(VideoProcessor LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -24,7 +24,7 @@ endif()
 
 option(USE_SYSTEM_PROTOBUF "Use system installed protobuf" ON)
 if(USE_SYSTEM_PROTOBUF)
-    find_package(Protobuf REQUIRED)
+    find_package(Protobuf 3.6 REQUIRED)
 else()
     include(FetchContent)
     FetchContent_Declare(
@@ -50,10 +50,7 @@ else()
     FetchContent_MakeAvailable(gRPC)
 endif()
 
-set(_REFLECTION grpc++_reflection)
-set(_GRPC_GRPCPP grpc++)
 set(_PROTOBUF_PROTOC $<TARGET_FILE:protoc>)
-set(_PROTOBUF_LIBPROTOBUF $<TARGET_FILE:protoc>)
 set(_GRPC_CPP_PLUGIN_EXECUTABLE $<TARGET_FILE:grpc_cpp_plugin>)
 
 file(MAKE_DIRECTORY "${PROJECT_SOURCE_DIR}/protogen")
@@ -84,18 +81,16 @@ add_library(grpc_proto
     ${proto_srcs}
     ${proto_hdrs})
 target_link_libraries(grpc_proto
-    ${_REFLECTION}
-    ${_GRPC_GRPCPP}
-    ${_PROTOBUF_LIBPROTOBUF})
+    grpc++_reflection
+    grpc++
+    libprotoc
+    libprotobuf)
 
-add_executable(VideoProcessor src/core/node.cpp src/core/concensus_module.cpp src/common/log.cpp)
+add_executable(VideoProcessor src/core/node.cpp src/core/concensus_module.cpp src/common/log.cpp src/main.cpp)
+target_link_libraries(VideoProcessor
+    grpc_proto)
 target_include_directories(VideoProcessor
     PRIVATE
     "${PROJECT_SOURCE_DIR}/src/common"
     "${PROJECT_SOURCE_DIR}/src/core"
     "${PROJECT_SOURCE_DIR}/protogen")
-target_link_libraries(VideoProcessor
-    grpc_proto
-    ${_REFLECTION}
-    ${_GRPC_GRPCPP}
-    ${_PROTOBUF_LIBPROTOBUF})

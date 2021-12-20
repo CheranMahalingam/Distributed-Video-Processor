@@ -31,6 +31,8 @@ public:
 
     ~Node();
 
+    void Run();
+
     static int current_id;
 
 private:
