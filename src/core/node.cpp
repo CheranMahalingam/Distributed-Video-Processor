@@ -10,7 +10,7 @@ Node::Node(const std::string address, const std::vector<std::string>& peer_ids, 
     scq_ = builder.AddCompletionQueue();
     server_ = builder.BuildAndStart();
 
-    cm_ = std::make_shared<ConcensusModule>(id_, io_, peer_ids);
+    cm_ = std::make_unique<ConcensusModule>(id_, io_, peer_ids);
     current_id++;
 }
 
@@ -20,8 +20,14 @@ Node::~Node() {
 }
 
 void Node::Run() {
-    Log(LogLevel::Info) << "Server created";
-    HandleRPC();
+    Log(LogLevel::Info) << "Server running...";
+
+    std::thread rpc_response_handler(&ConcensusModule::AsyncRpcResponseHandler, cm_.get());
+    std::thread rpc_event_loop(&Node::HandleRPC, this);
+    cm_->ElectionTimeout(0);
+
+    rpc_response_handler.join();
+    rpc_event_loop.join();
 }
 
 int Node::current_id = 0;
@@ -64,11 +70,13 @@ Node::RequestVoteData::RequestVoteData(rpc::RaftService::AsyncService* service, 
 void Node::RequestVoteData::Proceed() {
     switch (status_) {
         case CallStatus::Create: {
+            Log(LogLevel::Info) << "Creating RequestVote reply...";
             status_ = CallStatus::Process;
             service_->RequestRequestVote(&ctx_, &request_, &responder_, scq_, scq_, (void*)&tag_);
             break;
         }
         case CallStatus::Process: {
+            Log(LogLevel::Info) << "Processing RequestVote reply...";
             new RequestVoteData{service_, scq_, cm_};
             response_.set_term(cm_->current_term());
             response_.set_votegranted(true);
@@ -92,11 +100,13 @@ Node::AppendEntriesData::AppendEntriesData(rpc::RaftService::AsyncService* servi
 void Node::AppendEntriesData::Proceed() {
     switch (status_) {
         case CallStatus::Create: {
+            Log(LogLevel::Info) << "Creating AppendEntries reply...";
             status_ = CallStatus::Process;
             service_->RequestAppendEntries(&ctx_, &request_, &responder_, scq_, scq_, (void*)&tag_);
             break;
         }
         case CallStatus::Process: {
+            Log(LogLevel::Info) << "Processing AppendEntries reply...";
             new AppendEntriesData{service_, scq_, cm_};
             response_.set_term(cm_->current_term());
             response_.set_success(true);

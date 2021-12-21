@@ -33,6 +33,8 @@ public:
 
     void Run();
 
+    void HandleRPC();
+
     static int current_id;
 
 private:
@@ -87,15 +89,12 @@ private:
     };
 
 private:
-    void HandleRPC();
-
-private:
     int id_;
     rpc::RaftService::AsyncService service_;
     std::unique_ptr<ServerCompletionQueue> scq_;
     std::unique_ptr<Server> server_;
     boost::asio::io_context& io_;
-    std::shared_ptr<ConcensusModule> cm_;
+    std::unique_ptr<ConcensusModule> cm_;
 };
 
 }
