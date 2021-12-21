@@ -158,7 +158,7 @@ void ConcensusModule::ElectionTimeout(const int term) {
             ElectionCallback(term);
             Log(LogLevel::Error) << err;
         } else {
-            Log(LogLevel::Info) << "Election timer cancelled";
+            Log(LogLevel::Error) << "Election timer cancelled";
             ElectionTimeout(term);
         }
     });
@@ -172,7 +172,7 @@ void ConcensusModule::HeartbeatTimeout() {
         if (!err) {
             HeartbeatCallback();
         } else {
-            Log(LogLevel::Info) << "Heartbeat timer cancelled";
+            Log(LogLevel::Error) << "Heartbeat timer cancelled";
             HeartbeatTimeout();
         }
     });
@@ -191,7 +191,7 @@ void ConcensusModule::AsyncRpcResponseHandler() {
         if (call->status.ok()) {
             HandleRequestVoteResponse(call->reply);
         } else {
-            Log(LogLevel::Info) << "RPC RequestVote call failed unexpectedly";
+            Log(LogLevel::Error) << "RPC RequestVote call failed unexpectedly";
         }
 
         delete call;

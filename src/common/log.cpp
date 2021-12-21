@@ -19,11 +19,14 @@ void LogBuffer::Write(LogLevel severity, std::string message) {
 LogBuffer::LogBuffer() {}
 
 std::string LogBuffer::Timestamp() {
-    std::time_t raw_time;
-    std::time(&raw_time);
-    std::tm* curr_time = std::gmtime(&raw_time);
-    char buffer[30];
-    std::strftime(buffer, 30, "%Y-%m-%d %H:%M:%S %Z", curr_time);
+    auto current_time = std::chrono::system_clock::now();
+    char buffer[80];
+    auto transformed = current_time.time_since_epoch().count()/1000000;
+    auto millis = transformed%1000;
+    std::time_t tt = std::chrono::system_clock::to_time_t(current_time);
+    auto time_info = std::localtime(&tt);
+    std::strftime(buffer, 80, "%F %H:%M:%S", time_info);
+    std::sprintf(buffer, "%s.%03d", buffer, (int)millis);
     std::string time_string(buffer);
     return time_string;
 }
@@ -31,14 +34,14 @@ std::string LogBuffer::Timestamp() {
 std::string LogBuffer::Severity(LogLevel severity) {
     switch(severity) {
         case LogLevel::Error:
-            return "Error";
+            return "ERROR";
         case LogLevel::Warning:
-            return "Warning";
+            return "WARNING";
         case LogLevel::Info:
-            return "Info";
+            return "INFO";
         case LogLevel::Debug:
-            return "Debug";
+            return "DEBUG";
         default:
-            return "Unexpected Severity";
+            return "UNEXPECTED SEVERITY";
     }
 }
