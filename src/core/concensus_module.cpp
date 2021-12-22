@@ -20,14 +20,14 @@ void ConcensusModule::ElectionCallback(const int term) {
         return;
     }
 
-    if (current_term_ != term) {
-        Log(LogLevel::Info) << "Term changed from" << current_term_ << "to" << term;
+    if (current_term() != term) {
+        Log(LogLevel::Info) << "Term changed from" << current_term() << "to" << term;
         return;
     }
 
     state_ = ElectionRole::Candidate;
     current_term_++;
-    int saved_term = current_term_;
+    int saved_term = current_term();
     vote_ = id_;
     Log(LogLevel::Info) << "Becomes Candidate, term:" << saved_term;
 
@@ -36,7 +36,7 @@ void ConcensusModule::ElectionCallback(const int term) {
         RequestVote(peer_id, saved_term);
     }
 
-    ElectionTimeout(current_term_);
+    ElectionTimeout(current_term());
 }
 
 void ConcensusModule::HeartbeatCallback() {
@@ -45,7 +45,7 @@ void ConcensusModule::HeartbeatCallback() {
         return;
     }
 
-    int saved_term = current_term_;
+    int saved_term = current_term();
 
     for (auto peer_id:peer_ids_) {
         Log(LogLevel::Info) << "Sending AppendEntries call to" << peer_id;
@@ -95,11 +95,11 @@ void ConcensusModule::HandleRequestVoteResponse(rpc::RequestVoteResponse reply) 
     Log(LogLevel::Info) << "Received RequestVote reply";
 
     // Another server became the leader
-    if (reply.term() > current_term_) {
-        Log(LogLevel::Info) << "Term out of date, changed from" << current_term_ << "to" << reply.term();
+    if (reply.term() > current_term()) {
+        Log(LogLevel::Info) << "Term out of date, changed from" << current_term() << "to" << reply.term();
         ResetToFollower(reply.term());
         return;
-    } else if (reply.term() == current_term_) {
+    } else if (reply.term() == current_term()) {
         if (reply.votegranted()) {
             votes_received_++;
 
@@ -114,7 +114,7 @@ void ConcensusModule::HandleRequestVoteResponse(rpc::RequestVoteResponse reply) 
 
 void ConcensusModule::AppendEntries(const std::string peer_id, const int term) {
     rpc::AppendEntriesRequest request;
-    request.set_term(current_term_);
+    request.set_term(current_term());
     request.set_leaderid(id_);
 }
 
@@ -124,8 +124,8 @@ void ConcensusModule::HandleAppendEntriesResponse(rpc::AppendEntriesResponse rep
     }
     Log(LogLevel::Info) << "Received AppendEntries reply";
 
-    if (reply.term() > current_term_) {
-        Log(LogLevel::Info) << "Term out of date in heartbeat reply, changed from" << current_term_ << "to" << reply.term();
+    if (reply.term() > current_term()) {
+        Log(LogLevel::Info) << "Term out of date in heartbeat reply, changed from" << current_term() << "to" << reply.term();
         ResetToFollower(reply.term());
         return;
     }
@@ -134,17 +134,17 @@ void ConcensusModule::HandleAppendEntriesResponse(rpc::AppendEntriesResponse rep
 void ConcensusModule::PromoteToLeader() {
     state_ = ElectionRole::Leader;
     votes_received_ = 0;
-    Log(LogLevel::Info) << "Becoming leader, term:" << current_term_;
+    Log(LogLevel::Info) << "Becoming leader, term:" << current_term();
 
     HeartbeatTimeout();
 }
 
 void ConcensusModule::ResetToFollower(const int term) {
     state_ = ElectionRole::Follower;
-    current_term_ = term;
+    current_term_.store(term);
     vote_ = -1;
     votes_received_ = 0;
-    Log(LogLevel::Info) << "Becoming follower, term:" << current_term_;
+    Log(LogLevel::Info) << "Becoming follower, term:" << current_term();
 
     ElectionTimeout(term);
 }
@@ -152,14 +152,12 @@ void ConcensusModule::ResetToFollower(const int term) {
 void ConcensusModule::ElectionTimeout(const int term) {
     int random_timeout = std::rand() % 151 + 150;
     Log(LogLevel::Info) << "New election timer created" << random_timeout << "ms";
-    election_timer_.expires_from_now(std::chrono::milliseconds(random_timeout));
+    election_timer_.expires_after(std::chrono::milliseconds(random_timeout));
     election_timer_.async_wait([this, term](const boost::system::error_code& err) {
         if (!err) {
             ElectionCallback(term);
-            Log(LogLevel::Error) << err;
         } else {
-            Log(LogLevel::Error) << "Election timer cancelled";
-            ElectionTimeout(term);
+            Log(LogLevel::Error) << "Election timer cancelled with error:" << err.value() << err.message();
         }
     });
     io_.run();
@@ -167,12 +165,12 @@ void ConcensusModule::ElectionTimeout(const int term) {
 
 void ConcensusModule::HeartbeatTimeout() {
     Log(LogLevel::Info) << "New heartbeat timer created";
-    heartbeat_timer_.expires_from_now(std::chrono::milliseconds(50));
+    heartbeat_timer_.expires_after(std::chrono::milliseconds(50));
     heartbeat_timer_.async_wait([this](const boost::system::error_code& err) {
         if (!err) {
             HeartbeatCallback();
         } else {
-            Log(LogLevel::Error) << "Heartbeat timer cancelled";
+            Log(LogLevel::Error) << "Heartbeat timer cancelled with error:" << err.value() << err.message();
             HeartbeatTimeout();
         }
     });
@@ -199,7 +197,7 @@ void ConcensusModule::AsyncRpcResponseHandler() {
 }
 
 int ConcensusModule::current_term() const {
-    return current_term_;
+    return current_term_.load();
 }
 
 }

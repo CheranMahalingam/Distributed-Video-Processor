@@ -67,7 +67,7 @@ private:
         RequestVoteData(rpc::RaftService::AsyncService* service, ServerCompletionQueue* scq, ConcensusModule* cm);
 
         void Proceed() override;
-    
+
     private:
         rpc::RequestVoteRequest request_;
         rpc::RequestVoteResponse response_;
@@ -80,7 +80,7 @@ private:
         AppendEntriesData(rpc::RaftService::AsyncService* service, ServerCompletionQueue* scq, ConcensusModule* cm);
 
         void Proceed() override;
-    
+
     private:
         rpc::AppendEntriesRequest request_;
         rpc::AppendEntriesResponse response_;
@@ -94,7 +94,7 @@ private:
     std::unique_ptr<ServerCompletionQueue> scq_;
     std::unique_ptr<Server> server_;
     boost::asio::io_context& io_;
-    std::unique_ptr<ConcensusModule> cm_;
+    std::shared_ptr<ConcensusModule> cm_;
 };
 
 }

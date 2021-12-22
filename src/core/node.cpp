@@ -10,7 +10,7 @@ Node::Node(const std::string address, const std::vector<std::string>& peer_ids, 
     scq_ = builder.AddCompletionQueue();
     server_ = builder.BuildAndStart();
 
-    cm_ = std::make_unique<ConcensusModule>(id_, io_, peer_ids);
+    cm_ = std::make_shared<ConcensusModule>(id_, io_, peer_ids);
     current_id++;
 }
 
@@ -24,7 +24,10 @@ void Node::Run() {
 
     std::thread rpc_response_handler(&ConcensusModule::AsyncRpcResponseHandler, cm_.get());
     std::thread rpc_event_loop(&Node::HandleRPC, this);
-    cm_->ElectionTimeout(0);
+    boost::asio::steady_timer start_client(io_);
+    start_client.expires_from_now(std::chrono::seconds(10));
+    start_client.wait();
+    cm_->ElectionTimeout(cm_->current_term());
 
     rpc_response_handler.join();
     rpc_event_loop.join();
@@ -57,7 +60,7 @@ void Node::HandleRPC() {
 }
 
 Node::CallData::CallData(rpc::RaftService::AsyncService* service, ServerCompletionQueue* scq, ConcensusModule* cm)
-    : service_(service), scq_(scq), cm_(cm) {
+    : service_(service), scq_(scq), cm_(cm), status_(CallStatus::Create) {
 }
 
 Node::RequestVoteData::RequestVoteData(rpc::RaftService::AsyncService* service, ServerCompletionQueue* scq, ConcensusModule* cm) 

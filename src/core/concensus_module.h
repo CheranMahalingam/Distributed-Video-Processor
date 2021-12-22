@@ -76,7 +76,7 @@ private:
     boost::asio::io_context& io_;
     boost::asio::steady_timer election_timer_;
     boost::asio::steady_timer heartbeat_timer_;
-    int current_term_;
+    std::atomic<int> current_term_;
     int vote_;
     int votes_received_;
     ElectionRole state_;
