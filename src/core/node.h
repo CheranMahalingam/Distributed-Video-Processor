@@ -6,9 +6,11 @@
 #include <memory>
 #include <string>
 #include <grpc++/grpc++.h>
+#include <thread>
 
 #include "concensus_module.h"
 #include "log.h"
+#include "raft_msg_defs.h"
 #include "raft.grpc.pb.h"
 
 namespace raft {
@@ -22,11 +24,6 @@ using grpc::Status;
 
 class Node {
 public:
-    enum class MessageID {
-        RequestVote,
-        AppendEntries
-    };
-
     Node(const std::string address, const std::vector<std::string>& peer_ids, boost::asio::io_context& io_context);
 
     ~Node();
