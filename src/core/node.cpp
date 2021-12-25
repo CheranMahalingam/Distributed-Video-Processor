@@ -29,6 +29,7 @@ void Node::Run() {
     start_client.expires_from_now(std::chrono::seconds(10));
     start_client.wait();
     cm_->ElectionTimeout(cm_->current_term());
+    io_.run();
 
     rpc_response_handler.join();
     rpc_event_loop.join();
@@ -98,7 +99,7 @@ void Node::RequestVoteData::Proceed() {
                 response_.set_votegranted(true);
                 cm_->set_vote(request_.candidateid());
                 Log(LogLevel::Info) << "Reset...";
-                cm_->reset_election_timer();
+                cm_->ElectionTimeout(request_.term());
             } else {
                 response_.set_votegranted(false);
             }
@@ -150,7 +151,7 @@ void Node::AppendEntriesData::Proceed() {
                     cm_->ResetToFollower(request_.term());
                 }
                 Log(LogLevel::Info) << "Reset...";
-                cm_->reset_election_timer();
+                cm_->ElectionTimeout(request_.term());
                 success = true;
             }
 

@@ -5,8 +5,11 @@
 
 #include "node.h"
 
+using work_guard_type = boost::asio::executor_work_guard<boost::asio::io_context::executor_type>;
+
 int main(int argc, char* argv[]) {
     boost::asio::io_context io;
+    work_guard_type work_guard(io.get_executor());
 
     std::string address = argv[1];
     std::vector<std::string> peer_ids = {};

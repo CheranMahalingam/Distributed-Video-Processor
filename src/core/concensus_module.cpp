@@ -147,8 +147,7 @@ void ConcensusModule::PromoteToLeader() {
     votes_received_ = 0;
     Log(LogLevel::Info) << "Becoming leader, term:" << current_term();
 
-    std::thread heartbeat(&ConcensusModule::HeartbeatTimeout, this);
-    heartbeat.detach();
+    HeartbeatTimeout();
 }
 
 void ConcensusModule::ResetToFollower(const int term) {
@@ -158,12 +157,13 @@ void ConcensusModule::ResetToFollower(const int term) {
     votes_received_ = 0;
     Log(LogLevel::Info) << "Becoming follower, term:" << current_term();
 
-    std::thread election(&ConcensusModule::ElectionTimeout, this, term);
-    election.detach();
+    ElectionTimeout(term);
 }
 
 void ConcensusModule::ElectionTimeout(const int term) {
-    reset_election_timer();
+    int random_timeout = std::rand() % 151 + 150;
+    Log(LogLevel::Info) << "Election timer created:" << random_timeout << "ms";
+    election_timer_.expires_after(std::chrono::milliseconds(random_timeout));
     election_timer_.async_wait([this, term](const boost::system::error_code& err) {
         if (!err) {
             ElectionCallback(term);
@@ -171,7 +171,6 @@ void ConcensusModule::ElectionTimeout(const int term) {
             Log(LogLevel::Error) << "Election timer cancelled with error:" << err.message();
         }
     });
-    io_.run();
 }
 
 void ConcensusModule::HeartbeatTimeout() {
@@ -184,7 +183,6 @@ void ConcensusModule::HeartbeatTimeout() {
             Log(LogLevel::Error) << "Heartbeat timer cancelled with error:" << err.message();
         }
     });
-    io_.run();
 }
 
 void ConcensusModule::AsyncRpcResponseHandler() {
@@ -200,8 +198,6 @@ void ConcensusModule::AsyncRpcResponseHandler() {
                 auto* call = static_cast<AsyncClientCall<rpc::RequestVoteResponse>*>(tag_ptr->call);
                 if (call->status.ok()) {
                     HandleRequestVoteResponse(call->reply);
-                    // std::thread handler(&ConcensusModule::HandleRequestVoteResponse, this, call->reply);
-                    // handler.detach();
                 } else {
                     Log(LogLevel::Error) << "RPC RequestVote call failed unexpectedly";
                 }
@@ -212,8 +208,6 @@ void ConcensusModule::AsyncRpcResponseHandler() {
                 auto* call = static_cast<AsyncClientCall<rpc::AppendEntriesResponse>*>(tag_ptr->call);
                 if (call->status.ok()) {
                     HandleAppendEntriesResponse(call->reply);
-                    // std::thread handler(&ConcensusModule::HandleAppendEntriesResponse, this, call->reply);
-                    // handler.detach();
                 } else {
                     Log(LogLevel::Error) << "RPC AppendEntries call failed unexpectedly";
                 }
@@ -227,12 +221,6 @@ void ConcensusModule::AsyncRpcResponseHandler() {
 
 void ConcensusModule::set_vote(const int vote) {
     vote_.store(vote);
-}
-
-void ConcensusModule::reset_election_timer() {
-    int random_timeout = std::rand() % 151 + 150;
-    Log(LogLevel::Info) << "Election timer created:" << random_timeout << "ms";
-    election_timer_.expires_after(std::chrono::milliseconds(random_timeout));
 }
 
 int ConcensusModule::current_term() const {

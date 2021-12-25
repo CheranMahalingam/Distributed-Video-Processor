@@ -46,8 +46,6 @@ public:
 
     void set_vote(const int peer_id);
 
-    void reset_election_timer();
-
     int current_term() const;
 
     ElectionRole state() const;
