@@ -86,7 +86,13 @@ target_link_libraries(grpc_proto
     libprotoc
     libprotobuf)
 
-add_executable(VideoProcessor src/core/node.cpp src/core/concensus_module.cpp src/common/log.cpp src/main.cpp)
+add_executable(VideoProcessor 
+    src/core/rpc_server.cpp
+    src/core/rpc_client.cpp 
+    src/core/client_callback_queue.cpp 
+    src/core/concensus_module.cpp 
+    src/common/log.cpp
+    src/main.cpp)
 target_link_libraries(VideoProcessor
     grpc_proto)
 target_include_directories(VideoProcessor

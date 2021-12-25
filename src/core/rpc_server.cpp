@@ -1,43 +1,22 @@
-#include "node.h"
+#include "rpc_server.h"
 
 namespace raft {
 
-Node::Node(const std::string address, const std::vector<std::string>& peer_ids, boost::asio::io_context& io_context)
-    : id_(current_id), io_(io_context) {
+RpcServer::RpcServer(boost::asio::io_context& io_context, const std::string address, const std::vector<std::string>& peer_ids, std::shared_ptr<ConcensusModule> cm)
+    : io_(io_context), cm_(cm) {
     ServerBuilder builder;
     builder.AddListeningPort(address, grpc::InsecureServerCredentials());
     builder.RegisterService(&service_);
     scq_ = builder.AddCompletionQueue();
     server_ = builder.BuildAndStart();
-
-    cm_ = std::make_shared<ConcensusModule>(id_, io_, peer_ids);
-    current_id++;
 }
 
-Node::~Node() {
+RpcServer::~RpcServer() {
     server_->Shutdown();
     scq_->Shutdown();
 }
 
-void Node::Run() {
-    Log(LogLevel::Info) << "Server running...";
-
-    std::thread rpc_response_handler(&ConcensusModule::AsyncRpcResponseHandler, cm_.get());
-    std::thread rpc_event_loop(&Node::HandleRPC, this);
-
-    boost::asio::steady_timer start_client(io_);
-    start_client.expires_from_now(std::chrono::seconds(10));
-    start_client.wait();
-    cm_->ElectionTimeout(cm_->current_term());
-    io_.run();
-
-    rpc_response_handler.join();
-    rpc_event_loop.join();
-}
-
-int Node::current_id = 0;
-
-void Node::HandleRPC() {
+void RpcServer::HandleRPC() {
     new RequestVoteData{&service_, scq_.get(), cm_.get()};
     new AppendEntriesData{&service_, scq_.get(), cm_.get()};
     void* tag;
@@ -61,18 +40,18 @@ void Node::HandleRPC() {
     }
 }
 
-Node::CallData::CallData(rpc::RaftService::AsyncService* service, ServerCompletionQueue* scq, ConcensusModule* cm)
+RpcServer::CallData::CallData(rpc::RaftService::AsyncService* service, ServerCompletionQueue* scq, ConcensusModule* cm)
     : service_(service), scq_(scq), cm_(cm), status_(CallStatus::Create) {
 }
 
-Node::RequestVoteData::RequestVoteData(rpc::RaftService::AsyncService* service, ServerCompletionQueue* scq, ConcensusModule* cm) 
+RpcServer::RequestVoteData::RequestVoteData(rpc::RaftService::AsyncService* service, ServerCompletionQueue* scq, ConcensusModule* cm) 
     : CallData{service, scq, cm}, responder_(&ctx_) {
     tag_.id = MessageID::RequestVote;
     tag_.call = this;
     Proceed();
 }
 
-void Node::RequestVoteData::Proceed() {
+void RpcServer::RequestVoteData::Proceed() {
     switch (status_) {
         case CallStatus::Create: {
             Log(LogLevel::Info) << "Creating RequestVote reply...";
@@ -95,7 +74,7 @@ void Node::RequestVoteData::Proceed() {
                 cm_->ResetToFollower(request_.term());
             }
 
-            if (request_.term() == cm_->current_term() && (cm_->vote() == -1 || cm_->vote() == request_.candidateid())) {
+            if (request_.term() == cm_->current_term() && (cm_->vote() == "" || cm_->vote() == request_.candidateid())) {
                 response_.set_votegranted(true);
                 cm_->set_vote(request_.candidateid());
                 Log(LogLevel::Info) << "Reset...";
@@ -115,14 +94,14 @@ void Node::RequestVoteData::Proceed() {
     }
 }
 
-Node::AppendEntriesData::AppendEntriesData(rpc::RaftService::AsyncService* service, ServerCompletionQueue* scq, ConcensusModule* cm) 
+RpcServer::AppendEntriesData::AppendEntriesData(rpc::RaftService::AsyncService* service, ServerCompletionQueue* scq, ConcensusModule* cm) 
     : CallData{service, scq, cm}, responder_(&ctx_) {
     tag_.id = MessageID::AppendEntries;
     tag_.call = this;
     Proceed();
 }
 
-void Node::AppendEntriesData::Proceed() {
+void RpcServer::AppendEntriesData::Proceed() {
     switch (status_) {
         case CallStatus::Create: {
             Log(LogLevel::Info) << "Creating AppendEntries reply...";

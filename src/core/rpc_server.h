@@ -1,12 +1,11 @@
-#ifndef NODE_H
-#define NODE_H
+#ifndef RPC_SERVER_H
+#define RPC_SERVER_H
 
 #include <vector>
 #include <unordered_map>
 #include <memory>
 #include <string>
 #include <grpc++/grpc++.h>
-#include <thread>
 
 #include "concensus_module.h"
 #include "log.h"
@@ -22,17 +21,13 @@ using grpc::ServerContext;
 using grpc::ServerAsyncResponseWriter;
 using grpc::Status;
 
-class Node {
+class RpcServer {
 public:
-    Node(const std::string address, const std::vector<std::string>& peer_ids, boost::asio::io_context& io_context);
+    RpcServer(boost::asio::io_context& io_context, const std::string address, const std::vector<std::string>& peer_ids, std::shared_ptr<ConcensusModule> cm);
 
-    ~Node();
-
-    void Run();
+    ~RpcServer();
 
     void HandleRPC();
-
-    static int current_id;
 
 private:
     struct Tag {
@@ -86,11 +81,10 @@ private:
     };
 
 private:
-    int id_;
+    boost::asio::io_context& io_;
     rpc::RaftService::AsyncService service_;
     std::unique_ptr<ServerCompletionQueue> scq_;
     std::unique_ptr<Server> server_;
-    boost::asio::io_context& io_;
     std::shared_ptr<ConcensusModule> cm_;
 };
 

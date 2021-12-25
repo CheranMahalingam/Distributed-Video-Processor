@@ -9,7 +9,7 @@ service RaftService {
 
 message RequestVoteRequest {
     uint32 term = 1;
-    uint32 candidateId = 2;
+    string candidateId = 2;
     uint32 lastLogIndex = 3;
     uint32 lastLogTerm = 4;
 }
@@ -21,7 +21,7 @@ message RequestVoteResponse {
 
 message AppendEntriesRequest {
     uint32 term = 1;
-    uint32 leaderId = 2;
+    string leaderId = 2;
     uint32 prevLogIndex = 3;
     uint32 prevLogTerm = 4;
     repeated bytes entries = 5;
