@@ -79,37 +79,45 @@ void ClientCallbackQueue::HandleAppendEntriesResponse(AsyncClientCall<rpc::Appen
     }
 
     if (cm_->state() == ConcensusModule::ElectionRole::Leader && call->reply.term() == cm_->current_term()) {
-        CommandLog log(cm_->log());
-        int next = log.next_index(call->ctx.peer());
+        int next = cm_->log().next_index(call->ctx.peer());
         if (call->reply.success()) {
-            int next = log.next_index(call->ctx.peer());
-            log.set_next_index(call->ctx.peer(), next + call->request.entries().size());
-            log.set_match_index(call->ctx.peer(), next - 1);
-            Log(LogLevel::Info) << "AppendEntries reply from" << call->ctx.peer() << "successful: next_index =" << log.next_index(call->ctx.peer()) << "match_index =" << log.match_index(call->ctx.peer());
+            cm_->log().set_next_index(call->ctx.peer(), next + call->request.entries().size());
+            cm_->log().set_match_index(call->ctx.peer(), next + call->request.entries().size() - 1);
+            Log(LogLevel::Info) << "AppendEntries reply from" << call->ctx.peer() << "successful: next_index =" << cm_->log().next_index(call->ctx.peer()) 
+                << "match_index =" << cm_->log().match_index(call->ctx.peer());
 
-            int saved_commit_index = log.commit_index();
-            int log_size = log.entries().size();
-            std::vector<rpc::LogEntry> entries(log.entries());
+            int saved_commit_index = cm_->log().commit_index();
+            int log_size = cm_->log().entries().size();
+            std::vector<rpc::LogEntry> entries(cm_->log().entries());
             for (int i = saved_commit_index + 1; i < log_size; i++) {
                 if (entries[i].term() == cm_->current_term()) {
                     int match_count = 1;
                     for (auto peer_id:peer_ids_) {
-                        if (log.match_index(peer_id) >= i) {
+                        if (cm_->log().match_index(peer_id) >= i) {
                             match_count++;
                         }
                     }
 
                     if (match_count*2 > peer_ids_.size() + 1) {
-                        log.set_commit_index(i);
+                        cm_->log().set_commit_index(i);
                     }
                 }
             }
 
-            if (log.commit_index() != saved_commit_index) {
-                Log(LogLevel::Info) << "Leader sets commit_index =" << log.commit_index();
+            int new_commit_index = cm_->log().commit_index();
+            if (new_commit_index != saved_commit_index) {
+                Log(LogLevel::Info) << "Leader sets commit_index =" << new_commit_index;
+
+                while (cm_->log().last_applied() < new_commit_index) {
+                    cm_->log().increment_last_applied();
+
+                    int last_applied = cm_->log().last_applied();
+                    rpc::LogEntry uncommitted_entry = cm_->log().entries()[last_applied];
+                    cm_->log().ApplyCommand(uncommitted_entry.command());
+                }
             }
         } else {
-            log.set_next_index(call->ctx.peer(), next);
+            cm_->log().set_next_index(call->ctx.peer(), next - 1);
             Log(LogLevel::Info) << "AppendEntries reply from" << call->ctx.peer() << "unsuccessful: next_index =" << next;
         }
     }

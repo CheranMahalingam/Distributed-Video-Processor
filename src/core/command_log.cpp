@@ -2,8 +2,8 @@
 
 namespace raft {
 
-CommandLog::CommandLog(const std::vector<std::string>& peer_ids)
-    : commit_index_(-1), last_applied_(-1) {
+CommandLog::CommandLog(const std::vector<std::string>& peer_ids, std::unique_ptr<Storage> storage)
+    : commit_index_(-1), last_applied_(-1), store_(std::move(storage)) {
     for (auto peer_id:peer_ids) {
         next_index_[peer_id] = 0;
         match_index_[peer_id] = 0;
@@ -14,6 +14,10 @@ void CommandLog::AppendLog(int idx, const std::vector<rpc::LogEntry>& new_entrie
     std::vector<rpc::LogEntry> updated_log(entries_.begin(), entries_.begin() + idx);
     updated_log.insert(updated_log.begin(), new_entries.begin(), new_entries.end());
     entries_ = updated_log;
+}
+
+void CommandLog::ApplyCommand(const std::string command) {
+    // TODO: Parse string to complete a task
 }
 
 int CommandLog::LastLogIndex() {
@@ -44,6 +48,10 @@ void CommandLog::set_commit_index(const int idx) {
     commit_index_ = idx;
 }
 
+void CommandLog::increment_last_applied() {
+    last_applied_++;
+}
+
 std::vector<rpc::LogEntry> CommandLog::entries() const {
     return entries_;
 }
@@ -63,6 +71,10 @@ int CommandLog::match_index(const std::string peer_id) {
 
 int CommandLog::commit_index() const {
     return commit_index_;
+}
+
+int CommandLog::last_applied() const {
+    return last_applied_;
 }
 
 }

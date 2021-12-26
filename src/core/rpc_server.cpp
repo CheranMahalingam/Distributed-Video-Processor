@@ -69,9 +69,8 @@ void RpcServer::RequestVoteData::Proceed() {
                 break;
             }
 
-            CommandLog log(cm_->log());
-            int last_log_index = log.LastLogIndex();
-            int last_log_term = log.LastLogTerm();
+            int last_log_index = cm_->log().LastLogIndex();
+            int last_log_term = cm_->log().LastLogTerm();
 
             if (request_.term() > cm_->current_term()) {
                 Log(LogLevel::Info) << "Term out of date in RequestVote RPC, changed from" << cm_->current_term() << "to" << request_.term();
@@ -136,23 +135,23 @@ void RpcServer::AppendEntriesData::Proceed() {
             if (request_.term() == cm_->current_term()) {
                 if (cm_->state() != ConcensusModule::ElectionRole::Follower) {
                     cm_->ResetToFollower(request_.term());
+                } else {
+                    Log(LogLevel::Info) << "Reset...";
+                    cm_->ElectionTimeout(request_.term());
                 }
-                Log(LogLevel::Info) << "Reset...";
-                cm_->ElectionTimeout(request_.term());
 
-                CommandLog log(cm_->log());
                 // Attempt to update log if term is consistent between leader and follower at log index
                 if (request_.prevlogindex() == -1 ||
-                    (request_.prevlogindex() < log.entries().size() && request_.prevlogterm() == log.entries()[request_.prevlogindex()].term())) {
+                    (request_.prevlogindex() < cm_->log().entries().size() && request_.prevlogterm() == cm_->log().entries()[request_.prevlogindex()].term())) {
                     success = true;
 
                     int log_insert_index = request_.prevlogindex() + 1;
                     int new_entries_index = 0;
 
                     // Search for a point where there is a mismatch of terms between the existing logs and the new entries
-                    while (log_insert_index < log.entries().size() && 
+                    while (log_insert_index < cm_->log().entries().size() && 
                         new_entries_index < request_.entries().size() && 
-                        log.entries()[log_insert_index].term() == request_.entries()[new_entries_index].term()) {
+                        cm_->log().entries()[log_insert_index].term() == request_.entries()[new_entries_index].term()) {
                         log_insert_index++;
                         new_entries_index++;
                     }
@@ -160,12 +159,21 @@ void RpcServer::AppendEntriesData::Proceed() {
                     // Update followers log with new entries
                     if (new_entries_index < request_.entries().size()) {
                         std::vector<rpc::LogEntry> new_entries(request_.entries().begin() + new_entries_index, request_.entries().end());
-                        log.AppendLog(log_insert_index, new_entries);
+                        cm_->log().AppendLog(log_insert_index, new_entries);
                     }
 
-                    if (request_.leadercommit() > log.commit_index()) {
-                        log.set_commit_index(std::min((std::size_t)request_.leadercommit(), log.entries().size()));
-                        Log(LogLevel::Info) << "Setting commit index =" << log.commit_index();
+                    if (request_.leadercommit() > cm_->log().commit_index()) {
+                        int new_commit_index = std::min((std::size_t)request_.leadercommit(), cm_->log().entries().size());
+                        cm_->log().set_commit_index(new_commit_index);
+                        Log(LogLevel::Info) << "Setting commit index =" << new_commit_index;
+
+                        while (cm_->log().last_applied() < new_commit_index) {
+                            cm_->log().increment_last_applied();
+
+                            int last_applied = cm_->log().last_applied();
+                            rpc::LogEntry uncommitted_entry = cm_->log().entries()[last_applied];
+                            cm_->log().ApplyCommand(uncommitted_entry.command());
+                        }
                     }
                 }
             }
