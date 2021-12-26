@@ -90,7 +90,8 @@ add_executable(VideoProcessor
     src/core/rpc_server.cpp
     src/core/rpc_client.cpp 
     src/core/client_callback_queue.cpp 
-    src/core/concensus_module.cpp 
+    src/core/concensus_module.cpp
+    src/core/command_log.cpp
     src/common/log.cpp
     src/main.cpp)
 target_link_libraries(VideoProcessor

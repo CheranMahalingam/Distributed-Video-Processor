@@ -2,9 +2,10 @@
 
 namespace raft {
 
-ConcensusModule::ConcensusModule(boost::asio::io_context& io_context, const std::string address, const std::vector<std::string>& peer_ids, std::unique_ptr<RpcClient> rpc)
+ConcensusModule::ConcensusModule(boost::asio::io_context& io_context, const std::string address, const std::vector<std::string>& peer_ids,
+    std::unique_ptr<RpcClient> rpc, std::unique_ptr<CommandLog> log)
     : address_(address), peer_ids_(peer_ids), election_timer_(io_context), heartbeat_timer_(io_context), rpc_(std::move(rpc)),
-        current_term_(0), vote_(""), votes_received_(0), state_(ElectionRole::Follower) {
+        log_(std::move(log)), current_term_(0), vote_(""), votes_received_(0), state_(ElectionRole::Follower) {
 }
 
 void ConcensusModule::ElectionCallback(const int term) {
@@ -29,7 +30,13 @@ void ConcensusModule::ElectionCallback(const int term) {
 
     for (auto peer_id:peer_ids_) {
         Log(LogLevel::Info) << "Sending RequestVote call to" << peer_id;
-        rpc_->RequestVote(peer_id, saved_term);
+
+        rpc::RequestVoteRequest args;
+        args.set_term(saved_term);
+        args.set_candidateid(address_);
+        args.set_lastlogindex(log_->LastLogIndex());
+        args.set_lastlogterm(log_->LastLogTerm());
+        rpc_->RequestVote(peer_id, args);
     }
 
     ElectionTimeout(current_term());
@@ -45,7 +52,24 @@ void ConcensusModule::HeartbeatCallback() {
 
     for (auto peer_id:peer_ids_) {
         Log(LogLevel::Info) << "Sending AppendEntries call to" << peer_id;
-        rpc_->AppendEntries(peer_id, saved_term);
+
+        int next = log_->next_index(peer_id);
+        int prev_log_index = next - 1;
+        int prev_log_term = -1;
+        if (prev_log_index >= 0) {
+            prev_log_term = log_->entries()[prev_log_index].term();
+        }
+
+        rpc::AppendEntriesRequest args;
+        args.set_term(saved_term);
+        args.set_leaderid(address_);
+        args.set_prevlogindex(prev_log_index);
+        args.set_prevlogterm(prev_log_term);
+        args.set_leadercommit(log_->commit_index());
+        for (int i = next; i < log_->entries().size(); i++) {
+            *args.add_entries() = log_->entries()[i];
+        }
+        rpc_->AppendEntries(peer_id, args);
     }
 
     HeartbeatTimeout();
@@ -125,6 +149,10 @@ int ConcensusModule::votes_received() const {
 
 std::vector<std::string> ConcensusModule::peer_ids() const {
     return peer_ids_;
+}
+
+CommandLog& ConcensusModule::log() const {
+    return *log_;
 }
 
 }

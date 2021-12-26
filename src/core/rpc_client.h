@@ -2,8 +2,10 @@
 #define RPC_CLIENT_H
 
 #include <grpc++/grpc++.h>
+#include <string>
 #include <vector>
 #include <memory>
+#include <unordered_map>
 
 #include "log.h"
 #include "raft_msg_defs.h"
@@ -21,9 +23,9 @@ class RpcClient {
 public:
     RpcClient(const std::string address, const std::vector<std::string>& peer_ids, CompletionQueue& cq);
 
-    void RequestVote(const std::string peer_id, const int term);
+    void RequestVote(const std::string peer_id, const rpc::RequestVoteRequest& request);
 
-    void AppendEntries(const std::string peer_id, const int term);
+    void AppendEntries(const std::string peer_id, const rpc::AppendEntriesRequest& request);
 
 private:
     struct Tag {
@@ -31,8 +33,9 @@ private:
         MessageID id;
     };
 
-    template <class ResponseType>
+    template <class RequestType, class ResponseType>
     struct AsyncClientCall {
+        RequestType request;
         ResponseType reply;
         ClientContext ctx;
         Status status;

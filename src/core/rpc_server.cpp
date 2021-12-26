@@ -69,12 +69,20 @@ void RpcServer::RequestVoteData::Proceed() {
                 break;
             }
 
+            CommandLog log(cm_->log());
+            int last_log_index = log.LastLogIndex();
+            int last_log_term = log.LastLogTerm();
+
             if (request_.term() > cm_->current_term()) {
                 Log(LogLevel::Info) << "Term out of date in RequestVote RPC, changed from" << cm_->current_term() << "to" << request_.term();
                 cm_->ResetToFollower(request_.term());
             }
 
-            if (request_.term() == cm_->current_term() && (cm_->vote() == "" || cm_->vote() == request_.candidateid())) {
+            // Election safety to prevent node with out of date logs to be elected
+            if (request_.term() == cm_->current_term() && 
+               (cm_->vote() == "" || cm_->vote() == request_.candidateid()) &&
+               (request_.lastlogterm() > last_log_term ||
+               (request_.lastlogterm() == last_log_term && request_.lastlogindex() >= last_log_index))) {
                 response_.set_votegranted(true);
                 cm_->set_vote(request_.candidateid());
                 Log(LogLevel::Info) << "Reset...";
@@ -131,7 +139,35 @@ void RpcServer::AppendEntriesData::Proceed() {
                 }
                 Log(LogLevel::Info) << "Reset...";
                 cm_->ElectionTimeout(request_.term());
-                success = true;
+
+                CommandLog log(cm_->log());
+                // Attempt to update log if term is consistent between leader and follower at log index
+                if (request_.prevlogindex() == -1 ||
+                    (request_.prevlogindex() < log.entries().size() && request_.prevlogterm() == log.entries()[request_.prevlogindex()].term())) {
+                    success = true;
+
+                    int log_insert_index = request_.prevlogindex() + 1;
+                    int new_entries_index = 0;
+
+                    // Search for a point where there is a mismatch of terms between the existing logs and the new entries
+                    while (log_insert_index < log.entries().size() && 
+                        new_entries_index < request_.entries().size() && 
+                        log.entries()[log_insert_index].term() == request_.entries()[new_entries_index].term()) {
+                        log_insert_index++;
+                        new_entries_index++;
+                    }
+
+                    // Update followers log with new entries
+                    if (new_entries_index < request_.entries().size()) {
+                        std::vector<rpc::LogEntry> new_entries(request_.entries().begin() + new_entries_index, request_.entries().end());
+                        log.AppendLog(log_insert_index, new_entries);
+                    }
+
+                    if (request_.leadercommit() > log.commit_index()) {
+                        log.set_commit_index(std::min((std::size_t)request_.leadercommit(), log.entries().size()));
+                        Log(LogLevel::Info) << "Setting commit index =" << log.commit_index();
+                    }
+                }
             }
 
             response_.set_term(cm_->current_term());

@@ -10,15 +10,8 @@ RpcClient::RpcClient(const std::string address, const std::vector<std::string>& 
     }
 }
 
-void RpcClient::RequestVote(const std::string peer_id, const int term) {
-    rpc::RequestVoteRequest request;
-    request.set_term(term);
-    request.set_candidateid(address_);
-    // TODO: Update log index + term
-    request.set_lastlogindex(0);
-    request.set_lastlogterm(0);
-
-    auto* call = new AsyncClientCall<rpc::RequestVoteResponse>;
+void RpcClient::RequestVote(const std::string peer_id, const rpc::RequestVoteRequest& request) {
+    auto* call = new AsyncClientCall<rpc::RequestVoteRequest, rpc::RequestVoteResponse>;
 
     call->response_reader = stubs_[peer_id]->PrepareAsyncRequestVote(&call->ctx, request, &cq_);
 
@@ -30,17 +23,8 @@ void RpcClient::RequestVote(const std::string peer_id, const int term) {
     call->response_reader->Finish(&call->reply, &call->status, (void*)tag);
 }
 
-void RpcClient::AppendEntries(const std::string peer_id, const int term) {
-    rpc::AppendEntriesRequest request;
-    request.set_term(term);
-    request.set_leaderid(address_);
-    // TODO: Hydrate rpc call fields with correct values
-    request.set_prevlogindex(0);
-    request.set_prevlogterm(0);
-    // request.set_entries("0");
-    request.set_leadercommit(0);
-
-    auto* call = new AsyncClientCall<rpc::AppendEntriesResponse>;
+void RpcClient::AppendEntries(const std::string peer_id, const rpc::AppendEntriesRequest& request) {
+    auto* call = new AsyncClientCall<rpc::AppendEntriesRequest, rpc::AppendEntriesResponse>;
 
     call->response_reader = stubs_[peer_id]->PrepareAsyncAppendEntries(&call->ctx, request, &cq_);
 

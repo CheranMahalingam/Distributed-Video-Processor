@@ -2,10 +2,10 @@
 #define RPC_SERVER_H
 
 #include <vector>
-#include <unordered_map>
 #include <memory>
 #include <string>
 #include <grpc++/grpc++.h>
+#include <algorithm>
 
 #include "concensus_module.h"
 #include "log.h"

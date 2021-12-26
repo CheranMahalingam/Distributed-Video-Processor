@@ -24,11 +24,16 @@ message AppendEntriesRequest {
     string leaderId = 2;
     uint32 prevLogIndex = 3;
     uint32 prevLogTerm = 4;
-    repeated bytes entries = 5;
+    repeated LogEntry entries = 5;
     uint32 leaderCommit = 6;
 }
 
 message AppendEntriesResponse {
     uint32 term = 1;
     bool success = 2;
+}
+
+message LogEntry {
+    uint32 term = 1;
+    string command = 2;
 }

@@ -20,27 +20,28 @@ using grpc::Status;
 
 class ClientCallbackQueue {
 public:
+    template <class RequestType, class ResponseType>
+    struct AsyncClientCall {
+        RequestType request;
+        ResponseType reply;
+        ClientContext ctx;
+        Status status;
+        std::unique_ptr<ClientAsyncResponseReader<ResponseType>> response_reader;
+    };
+
     ClientCallbackQueue(const std::vector<std::string>& peer_ids, std::shared_ptr<ConcensusModule> cm, CompletionQueue& cq);
 
     void AsyncRpcResponseHandler();
 
 private:
-    void HandleRequestVoteResponse(rpc::RequestVoteResponse reply);
+    void HandleRequestVoteResponse(AsyncClientCall<rpc::RequestVoteRequest, rpc::RequestVoteResponse>* call);
 
-    void HandleAppendEntriesResponse(rpc::AppendEntriesResponse reply);
+    void HandleAppendEntriesResponse(AsyncClientCall<rpc::AppendEntriesRequest, rpc::AppendEntriesResponse>* call);
 
 private:
     struct Tag {
         void* call;
         MessageID id;
-    };
-
-    template <class ResponseType>
-    struct AsyncClientCall {
-        ResponseType reply;
-        ClientContext ctx;
-        Status status;
-        std::unique_ptr<ClientAsyncResponseReader<ResponseType>> response_reader;
     };
 
     std::vector<std::string> peer_ids_;

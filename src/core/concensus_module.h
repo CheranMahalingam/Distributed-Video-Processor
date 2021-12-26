@@ -5,11 +5,10 @@
 #include <grpc++/grpc++.h>
 #include <vector>
 #include <string>
-#include <utility>
-#include <thread>
 #include <memory>
 
 #include "rpc_client.h"
+#include "command_log.h"
 #include "log.h"
 #include "raft.grpc.pb.h"
 
@@ -29,7 +28,8 @@ public:
         Dead
     };
 
-    ConcensusModule(boost::asio::io_context& io_context, const std::string address, const std::vector<std::string>& peer_ids, std::unique_ptr<RpcClient> rpc);
+    ConcensusModule(boost::asio::io_context& io_context, const std::string address, const std::vector<std::string>& peer_ids,
+        std::unique_ptr<RpcClient> rpc, std::unique_ptr<CommandLog> log);
 
 public:
     void ElectionTimeout(const int term);
@@ -52,6 +52,8 @@ public:
 
     std::vector<std::string> peer_ids() const;
 
+    CommandLog& log() const;
+
 private:
     void ElectionCallback(const int term);
 
@@ -67,6 +69,7 @@ private:
     std::string address_;
     std::vector<std::string> peer_ids_;
     std::unique_ptr<RpcClient> rpc_;
+    std::unique_ptr<CommandLog> log_;
     boost::asio::steady_timer election_timer_;
     boost::asio::steady_timer heartbeat_timer_;
     std::atomic<int> current_term_;
