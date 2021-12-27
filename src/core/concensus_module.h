@@ -6,9 +6,11 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <mutex>
 
 #include "rpc_client.h"
 #include "command_log.h"
+#include "commit_channel.h"
 #include "log.h"
 #include "raft.grpc.pb.h"
 
@@ -28,16 +30,25 @@ public:
         Dead
     };
 
-    ConcensusModule(boost::asio::io_context& io_context, const std::string address, const std::vector<std::string>& peer_ids,
-        std::unique_ptr<RpcClient> rpc, std::unique_ptr<CommandLog> log);
-
-public:
+    ConcensusModule(
+        boost::asio::io_context& io_context, 
+        const std::string address, 
+        const std::vector<std::string>& peer_ids,
+        std::unique_ptr<RpcClient> rpc, 
+        std::unique_ptr<CommandLog> log, 
+        std::unique_ptr<CommitChannel> channel);
+    
     void ElectionTimeout(const int term);
 
     void ResetToFollower(const int term);
 
     void PromoteToLeader();
 
+    void CommitEntry(const rpc::LogEntry& entry);
+
+    void Submit(const std::string command);
+
+public:
     void set_vote(const std::string peer_id);
 
     void set_votes_received(const int votes);
@@ -70,6 +81,7 @@ private:
     std::vector<std::string> peer_ids_;
     std::unique_ptr<RpcClient> rpc_;
     std::unique_ptr<CommandLog> log_;
+    std::unique_ptr<CommitChannel> channel_;
     boost::asio::steady_timer election_timer_;
     boost::asio::steady_timer heartbeat_timer_;
     std::atomic<int> current_term_;

@@ -2,7 +2,11 @@
 
 namespace raft {
 
-RpcServer::RpcServer(boost::asio::io_context& io_context, const std::string address, const std::vector<std::string>& peer_ids, std::shared_ptr<ConcensusModule> cm)
+RpcServer::RpcServer(
+    boost::asio::io_context& io_context, 
+    const std::string address, 
+    const std::vector<std::string>& peer_ids, 
+    std::shared_ptr<ConcensusModule> cm)
     : io_(io_context), cm_(cm) {
     ServerBuilder builder;
     builder.AddListeningPort(address, grpc::InsecureServerCredentials());
@@ -159,7 +163,7 @@ void RpcServer::AppendEntriesData::Proceed() {
                     // Update followers log with new entries
                     if (new_entries_index < request_.entries().size()) {
                         std::vector<rpc::LogEntry> new_entries(request_.entries().begin() + new_entries_index, request_.entries().end());
-                        cm_->log().AppendLog(log_insert_index, new_entries);
+                        cm_->log().InsertLog(log_insert_index, new_entries);
                     }
 
                     if (request_.leadercommit() > cm_->log().commit_index()) {
@@ -172,7 +176,7 @@ void RpcServer::AppendEntriesData::Proceed() {
 
                             int last_applied = cm_->log().last_applied();
                             rpc::LogEntry uncommitted_entry = cm_->log().entries()[last_applied];
-                            cm_->log().ApplyCommand(uncommitted_entry.command());
+                            cm_->CommitEntry(uncommitted_entry);
                         }
                     }
                 }

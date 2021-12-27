@@ -7,6 +7,28 @@ service RaftService {
     rpc AppendEntries (AppendEntriesRequest) returns (AppendEntriesResponse) {}
 }
 
+// enum CommandType {
+//     HELLO = 0;
+//     VIDEO = 1;
+// }
+
+// message HelloRequest {
+//     uint32 id = 1;
+// }
+
+// message VideoRequest {
+//     uint32 id = 1;
+//     bytes buffer = 2;
+// }
+
+// message Command {
+//     CommandType id = 1;
+//     oneof Args {
+//         HelloRequest hello = 2;
+//         VideoRequest video = 3;
+//     }
+// }
+
 message RequestVoteRequest {
     uint32 term = 1;
     string candidateId = 2;

@@ -23,7 +23,11 @@ using grpc::Status;
 
 class RpcServer {
 public:
-    RpcServer(boost::asio::io_context& io_context, const std::string address, const std::vector<std::string>& peer_ids, std::shared_ptr<ConcensusModule> cm);
+    RpcServer(
+        boost::asio::io_context& io_context, 
+        const std::string address, 
+        const std::vector<std::string>& peer_ids, 
+        std::shared_ptr<ConcensusModule> cm);
 
     ~RpcServer();
 

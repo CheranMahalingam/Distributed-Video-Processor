@@ -2,22 +2,22 @@
 
 namespace raft {
 
-CommandLog::CommandLog(const std::vector<std::string>& peer_ids, std::unique_ptr<Storage> storage)
-    : commit_index_(-1), last_applied_(-1), store_(std::move(storage)) {
+CommandLog::CommandLog(const std::vector<std::string>& peer_ids)
+    : commit_index_(-1), last_applied_(-1) {
     for (auto peer_id:peer_ids) {
         next_index_[peer_id] = 0;
-        match_index_[peer_id] = 0;
+        match_index_[peer_id] = -1;
     }
 }
 
-void CommandLog::AppendLog(int idx, const std::vector<rpc::LogEntry>& new_entries) {
+void CommandLog::AppendLog(const rpc::LogEntry& entry) {
+    entries_.push_back(entry);
+}
+
+void CommandLog::InsertLog(int idx, const std::vector<rpc::LogEntry>& new_entries) {
     std::vector<rpc::LogEntry> updated_log(entries_.begin(), entries_.begin() + idx);
     updated_log.insert(updated_log.begin(), new_entries.begin(), new_entries.end());
     entries_ = updated_log;
-}
-
-void CommandLog::ApplyCommand(const std::string command) {
-    // TODO: Parse string to complete a task
 }
 
 int CommandLog::LastLogIndex() {

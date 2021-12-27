@@ -113,7 +113,7 @@ void ClientCallbackQueue::HandleAppendEntriesResponse(AsyncClientCall<rpc::Appen
 
                     int last_applied = cm_->log().last_applied();
                     rpc::LogEntry uncommitted_entry = cm_->log().entries()[last_applied];
-                    cm_->log().ApplyCommand(uncommitted_entry.command());
+                    cm_->CommitEntry(uncommitted_entry);
                 }
             }
         } else {

@@ -2,10 +2,24 @@
 
 namespace raft {
 
-ConcensusModule::ConcensusModule(boost::asio::io_context& io_context, const std::string address, const std::vector<std::string>& peer_ids,
-    std::unique_ptr<RpcClient> rpc, std::unique_ptr<CommandLog> log)
-    : address_(address), peer_ids_(peer_ids), election_timer_(io_context), heartbeat_timer_(io_context), rpc_(std::move(rpc)),
-        log_(std::move(log)), current_term_(0), vote_(""), votes_received_(0), state_(ElectionRole::Follower) {
+ConcensusModule::ConcensusModule(
+    boost::asio::io_context& io_context, 
+    const std::string address, 
+    const std::vector<std::string>& peer_ids,
+    std::unique_ptr<RpcClient> rpc, 
+    std::unique_ptr<CommandLog> log, 
+    std::unique_ptr<CommitChannel> channel)
+    : address_(address), 
+      peer_ids_(peer_ids), 
+      election_timer_(io_context), 
+      heartbeat_timer_(io_context), 
+      rpc_(std::move(rpc)),
+      log_(std::move(log)),
+      current_term_(0), 
+      vote_(""), 
+      votes_received_(0), 
+      state_(ElectionRole::Follower), 
+      channel_(std::move(channel)) {
 }
 
 void ConcensusModule::ElectionCallback(const int term) {
@@ -121,6 +135,19 @@ void ConcensusModule::HeartbeatTimeout() {
             Log(LogLevel::Error) << "Heartbeat timer cancelled with error:" << err.message();
         }
     });
+}
+
+void ConcensusModule::CommitEntry(const rpc::LogEntry& entry) {
+    std::lock_guard<std::mutex> guard(channel_->queue_mutex_);
+    channel_->commit_queue_.push(entry);
+    channel_->commit_notifier_.notify_one();
+}
+
+void ConcensusModule::Submit(const std::string command) {
+    rpc::LogEntry new_entry;
+    new_entry.set_term(current_term());
+    new_entry.set_command(command);
+    log_->AppendLog(new_entry);
 }
 
 void ConcensusModule::set_vote(const std::string vote) {

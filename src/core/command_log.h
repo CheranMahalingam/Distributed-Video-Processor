@@ -13,11 +13,11 @@ namespace raft {
 
 class CommandLog {
 public:
-    CommandLog(const std::vector<std::string>& peer_ids, std::unique_ptr<Storage> storage);
+    CommandLog(const std::vector<std::string>& peer_ids);
 
-    void AppendLog(int idx, const std::vector<rpc::LogEntry>& new_entries);
+    void AppendLog(const rpc::LogEntry& new_entry);
 
-    void ApplyCommand(const std::string command);
+    void InsertLog(int idx, const std::vector<rpc::LogEntry>& new_entries);
 
     int LastLogIndex();
 
@@ -51,7 +51,6 @@ private:
     int last_applied_;
     std::unordered_map<std::string, int> next_index_;
     std::unordered_map<std::string, int> match_index_;
-    std::unique_ptr<Storage> store_;
 };
 
 }

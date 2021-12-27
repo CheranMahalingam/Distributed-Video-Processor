@@ -93,6 +93,7 @@ add_executable(VideoProcessor
     src/core/concensus_module.cpp
     src/core/command_log.cpp
     src/core/storage.cpp
+    src/core/commit_channel.cpp
     src/common/log.cpp
     src/main.cpp)
 target_link_libraries(VideoProcessor
