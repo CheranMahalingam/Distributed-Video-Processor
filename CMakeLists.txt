@@ -92,7 +92,7 @@ add_executable(VideoProcessor
     src/core/client_callback_queue.cpp 
     src/core/concensus_module.cpp
     src/core/command_log.cpp
-    src/core/storage.cpp
+    src/core/snapshot.cpp
     src/core/commit_channel.cpp
     src/common/log.cpp
     src/main.cpp)

@@ -59,3 +59,8 @@ message LogEntry {
     uint32 term = 1;
     string command = 2;
 }
+
+message State {
+    uint32 term = 1;
+    string voteId = 2;
+}

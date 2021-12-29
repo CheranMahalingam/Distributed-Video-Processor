@@ -10,7 +10,7 @@
 #include "rpc_server.h"
 #include "client_callback_queue.h"
 #include "command_log.h"
-#include "storage.h"
+#include "snapshot.h"
 #include "commit_channel.h"
 
 using work_guard_type = boost::asio::executor_work_guard<boost::asio::io_context::executor_type>;
@@ -29,19 +29,20 @@ int main(int argc, char* argv[]) {
     CompletionQueue cq;
 
     std::unique_ptr<raft::CommitChannel> channel(std::make_unique<raft::CommitChannel>());
-    std::unique_ptr<raft::Storage> storage(std::make_unique<raft::Storage>());
+    std::unique_ptr<raft::Snapshot> storage(std::make_unique<raft::Snapshot>("../store/" + address + "/"));
     std::unique_ptr<raft::RpcClient> client(std::make_unique<raft::RpcClient>(address, peer_ids, cq));
     std::unique_ptr<raft::CommandLog> log(std::make_unique<raft::CommandLog>(peer_ids));
 
     std::thread commit_queue_loop(&raft::CommitChannel::ConsumeEvents, channel.get());
-    
+
     std::shared_ptr<raft::ConcensusModule> cm(std::make_shared<raft::ConcensusModule>(
         io,
         address,
         peer_ids,
         std::move(client),
         std::move(log),
-        std::move(channel)));
+        std::move(channel),
+        std::move(storage)));
     std::unique_ptr<raft::RpcServer> server(std::make_unique<raft::RpcServer>(io, address, peer_ids, cm));
     std::unique_ptr<raft::ClientCallbackQueue> reply_queue(std::make_unique<raft::ClientCallbackQueue>(peer_ids, cm, cq));
 

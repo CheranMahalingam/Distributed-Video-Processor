@@ -6,7 +6,7 @@
 #include <vector>
 #include <unordered_map>
 
-#include "storage.h"
+#include "snapshot.h"
 #include "raft.grpc.pb.h"
 
 namespace raft {
@@ -24,6 +24,7 @@ public:
     int LastLogTerm();
 
 public:
+    void set_entries(const std::vector<rpc::LogEntry>& entries);
 
     void set_next_index(const std::string peer_id, const int new_index);
 

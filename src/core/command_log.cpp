@@ -36,6 +36,10 @@ int CommandLog::LastLogTerm() {
     }
 }
 
+void CommandLog::set_entries(const std::vector<rpc::LogEntry>& entries) {
+    entries_ = entries;
+}
+
 void CommandLog::set_next_index(const std::string peer_id, const int new_index) {
     next_index_[peer_id] = new_index;
 }

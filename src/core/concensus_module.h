@@ -7,10 +7,13 @@
 #include <string>
 #include <memory>
 #include <mutex>
+#include <tuple>
+#include <random>
 
 #include "rpc_client.h"
 #include "command_log.h"
 #include "commit_channel.h"
+#include "snapshot.h"
 #include "log.h"
 #include "raft.grpc.pb.h"
 
@@ -36,7 +39,8 @@ public:
         const std::vector<std::string>& peer_ids,
         std::unique_ptr<RpcClient> rpc, 
         std::unique_ptr<CommandLog> log, 
-        std::unique_ptr<CommitChannel> channel);
+        std::unique_ptr<CommitChannel> channel,
+        std::unique_ptr<Snapshot> snapshot);
     
     void ElectionTimeout(const int term);
 
@@ -47,6 +51,8 @@ public:
     void CommitEntry(const rpc::LogEntry& entry);
 
     void Submit(const std::string command);
+
+    void PersistLogToStorage(const std::vector<rpc::LogEntry>& entries, bool append);
 
 public:
     void set_vote(const std::string peer_id);
@@ -76,12 +82,15 @@ private:
 
     void HeartbeatTimeout();
 
+    void RestoreFromStorage();
+
 private:
     std::string address_;
     std::vector<std::string> peer_ids_;
     std::unique_ptr<RpcClient> rpc_;
     std::unique_ptr<CommandLog> log_;
     std::unique_ptr<CommitChannel> channel_;
+    std::unique_ptr<Snapshot> snapshot_;
     boost::asio::steady_timer election_timer_;
     boost::asio::steady_timer heartbeat_timer_;
     std::atomic<int> current_term_;

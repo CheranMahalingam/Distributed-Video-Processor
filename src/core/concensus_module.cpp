@@ -8,7 +8,8 @@ ConcensusModule::ConcensusModule(
     const std::vector<std::string>& peer_ids,
     std::unique_ptr<RpcClient> rpc, 
     std::unique_ptr<CommandLog> log, 
-    std::unique_ptr<CommitChannel> channel)
+    std::unique_ptr<CommitChannel> channel,
+    std::unique_ptr<Snapshot> snapshot)
     : address_(address), 
       peer_ids_(peer_ids), 
       election_timer_(io_context), 
@@ -19,7 +20,11 @@ ConcensusModule::ConcensusModule(
       vote_(""), 
       votes_received_(0), 
       state_(ElectionRole::Follower), 
-      channel_(std::move(channel)) {
+      channel_(std::move(channel)),
+      snapshot_(std::move(snapshot)) {
+    if (!snapshot_->Empty()) {
+        RestoreFromStorage();
+    }
 }
 
 void ConcensusModule::ElectionCallback(const int term) {
@@ -41,6 +46,8 @@ void ConcensusModule::ElectionCallback(const int term) {
     set_vote(address_);
     votes_received_ = 1;
     Log(LogLevel::Info) << "Becomes Candidate, term:" << saved_term;
+
+    snapshot_->PersistState(current_term_, vote_);
 
     for (auto peer_id:peer_ids_) {
         Log(LogLevel::Info) << "Sending RequestVote call to" << peer_id;
@@ -109,6 +116,8 @@ void ConcensusModule::ResetToFollower(const int term) {
     votes_received_ = 0;
     Log(LogLevel::Info) << "Becoming follower, term:" << current_term();
 
+    snapshot_->PersistState(current_term_, vote_);
+
     ElectionTimeout(term);
 }
 
@@ -144,10 +153,26 @@ void ConcensusModule::CommitEntry(const rpc::LogEntry& entry) {
 }
 
 void ConcensusModule::Submit(const std::string command) {
-    rpc::LogEntry new_entry;
-    new_entry.set_term(current_term());
-    new_entry.set_command(command);
-    log_->AppendLog(new_entry);
+    if (state_ == ElectionRole::Leader) {
+        rpc::LogEntry new_entry;
+        new_entry.set_term(current_term());
+        new_entry.set_command(command);
+        log_->AppendLog(new_entry);
+        PersistLogToStorage({new_entry}, true);
+    }
+}
+
+void ConcensusModule::PersistLogToStorage(const std::vector<rpc::LogEntry>& entries, bool append) {
+    snapshot_->PersistLog(entries, append);
+}
+
+void ConcensusModule::RestoreFromStorage() {
+    auto [term, vote] = snapshot_->RestoreState();
+    current_term_ = term;
+    vote_ = vote;
+
+    auto entries = snapshot_->RestoreLog();
+    log_->set_entries(entries);
 }
 
 void ConcensusModule::set_vote(const std::string vote) {

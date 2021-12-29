@@ -2,7 +2,8 @@
 
 namespace raft {
 
-CommitChannel::CommitChannel() {}
+CommitChannel::CommitChannel() {
+}
 
 void CommitChannel::ConsumeEvents() {
     while (true) {

@@ -164,6 +164,7 @@ void RpcServer::AppendEntriesData::Proceed() {
                     if (new_entries_index < request_.entries().size()) {
                         std::vector<rpc::LogEntry> new_entries(request_.entries().begin() + new_entries_index, request_.entries().end());
                         cm_->log().InsertLog(log_insert_index, new_entries);
+                        cm_->PersistLogToStorage(cm_->log().entries(), false);
                     }
 
                     if (request_.leadercommit() > cm_->log().commit_index()) {
