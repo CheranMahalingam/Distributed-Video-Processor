@@ -24,6 +24,8 @@ void Snapshot::PersistLog(const std::vector<rpc::LogEntry>& entries, const bool 
     auto flags = std::ios::out | std::ios::binary;
     if (!append) {
         flags |= std::ios::trunc;
+    } else {
+        flags |= std::ios::app;
     }
     std::fstream out(log_file_, flags);
     for (auto &entry:entries) {
@@ -54,7 +56,6 @@ std::vector<rpc::LogEntry> Snapshot::RestoreLog() {
     rpc::LogEntry entry;
     while (ParseDelimitedFromZeroCopyStream(&entry, &log_stream, nullptr)) {
         entries.push_back(entry);
-        logger(LogLevel::Info) << entry.command();
     }
 
     in.close();

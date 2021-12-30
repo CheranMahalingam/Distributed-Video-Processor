@@ -159,7 +159,7 @@ void ConcensusModule::Submit(const std::string command) {
         new_entry.set_term(current_term());
         new_entry.set_command(command);
         log_->AppendLog(new_entry);
-        PersistLogToStorage(log_->entries(), false);
+        PersistLogToStorage({new_entry}, true);
     }
 }
 

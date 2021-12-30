@@ -49,11 +49,11 @@ void ClientCallbackQueue::HandleRequestVoteResponse(AsyncClientCall<rpc::Request
     }
 
     // Another server became the leader
-    if (call->reply.term() > cm_->current_term()) {
-        logger(LogLevel::Debug) << "Term out of date, changed from" << cm_->current_term() << "to" << call->reply.term();
+    if (call->reply.term() > call->request.term()) {
+        logger(LogLevel::Debug) << "Term out of date, changed from" << call->request.term() << "to" << call->reply.term();
         cm_->ResetToFollower(call->reply.term());
         return;
-    } else if (call->reply.term() == cm_->current_term()) {
+    } else if (call->reply.term() == call->request.term()) {
         if (call->reply.votegranted()) {
             cm_->set_votes_received(cm_->votes_received() + 1);
 
@@ -67,13 +67,10 @@ void ClientCallbackQueue::HandleRequestVoteResponse(AsyncClientCall<rpc::Request
 }
 
 void ClientCallbackQueue::HandleAppendEntriesResponse(AsyncClientCall<rpc::AppendEntriesRequest, rpc::AppendEntriesResponse>* call) {
-    if (!call->reply.success()) {
-        return;
-    }
     logger(LogLevel::Debug) << "Received AppendEntries reply";
 
-    if (call->reply.term() > cm_->current_term()) {
-        logger(LogLevel::Debug) << "Term out of date in heartbeat reply, changed from" << cm_->current_term() << "to" << call->reply.term();
+    if (call->reply.term() > call->request.term()) {
+        logger(LogLevel::Debug) << "Term out of date in heartbeat reply, changed from" << call->request.term() << "to" << call->reply.term();
         cm_->ResetToFollower(call->reply.term());
         return;
     }
