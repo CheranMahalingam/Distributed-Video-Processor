@@ -167,7 +167,7 @@ void RpcServer::AppendEntriesData::Proceed() {
                         cm_->PersistLogToStorage(cm_->log().entries(), false);
                     }
 
-                    if (request_.leadercommit() > cm_->log().commit_index()) {
+                    if ((int)request_.leadercommit() > cm_->log().commit_index()) {
                         int new_commit_index = std::min((std::size_t)request_.leadercommit(), cm_->log().entries().size());
                         cm_->log().set_commit_index(new_commit_index);
                         logger(LogLevel::Debug) << "Setting commit index =" << new_commit_index;

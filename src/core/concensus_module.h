@@ -23,6 +23,7 @@ using grpc::ClientContext;
 using grpc::ClientAsyncResponseReader;
 using grpc::CompletionQueue;
 using grpc::Status;
+using grpc::CompletionQueue;
 
 class ConcensusModule {
 public:
@@ -35,12 +36,9 @@ public:
 
     ConcensusModule(
         boost::asio::io_context& io_context, 
-        const std::string address, 
+        const std::string address,
         const std::vector<std::string>& peer_ids,
-        std::unique_ptr<RpcClient> rpc, 
-        std::unique_ptr<CommandLog> log, 
-        std::unique_ptr<CommitChannel> channel,
-        std::unique_ptr<Snapshot> snapshot);
+        CompletionQueue& cq);
 
     void ElectionTimeout(const int term);
 
@@ -86,12 +84,14 @@ private:
 
     std::string RandomString();
 
+public:
+    std::unique_ptr<CommitChannel> channel_;
+
 private:
     std::string address_;
     std::vector<std::string> peer_ids_;
     std::unique_ptr<RpcClient> rpc_;
     std::unique_ptr<CommandLog> log_;
-    std::unique_ptr<CommitChannel> channel_;
     std::unique_ptr<Snapshot> snapshot_;
     boost::asio::steady_timer election_timer_;
     boost::asio::steady_timer heartbeat_timer_;

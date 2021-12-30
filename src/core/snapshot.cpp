@@ -54,7 +54,7 @@ std::vector<rpc::LogEntry> Snapshot::RestoreLog() {
     rpc::LogEntry entry;
     while (ParseDelimitedFromZeroCopyStream(&entry, &log_stream, nullptr)) {
         entries.push_back(entry);
-        // logger(LogLevel::Info) << entry.command();
+        logger(LogLevel::Info) << entry.command();
     }
 
     in.close();

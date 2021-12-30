@@ -9,20 +9,21 @@ void CommitChannel::ConsumeEvents() {
     while (true) {
         rpc::LogEntry commit;
 
-        {
-            std::unique_lock<std::mutex> guard(queue_mutex_);
-            commit_notifier_.wait(guard, [&](){ return !commit_queue_.empty(); });
+        std::unique_lock<std::mutex> guard(queue_mutex_);
 
-            commit = commit_queue_.front();
-            commit_queue_.pop();
-        }
+        commit_notifier_.wait(guard, [&]{ return !commit_queue_.empty(); });
+
+        commit = commit_queue_.front();
+        commit_queue_.pop();
+
+        guard.unlock();
 
         ApplyCommit(commit);
     }
 }
 
 void CommitChannel::ApplyCommit(const rpc::LogEntry& commit) {
-    logger(LogLevel::Debug) << "Applying commit, term =" << commit.term() << "command =" << commit.command();
+    logger(LogLevel::Info) << "Applying commit, term =" << commit.term() << "command =" << commit.command();
 }
 
 }

@@ -6,22 +6,20 @@ ConcensusModule::ConcensusModule(
     boost::asio::io_context& io_context, 
     const std::string address, 
     const std::vector<std::string>& peer_ids,
-    std::unique_ptr<RpcClient> rpc, 
-    std::unique_ptr<CommandLog> log, 
-    std::unique_ptr<CommitChannel> channel,
-    std::unique_ptr<Snapshot> snapshot)
-    : address_(address), 
-      peer_ids_(peer_ids), 
-      election_timer_(io_context), 
-      heartbeat_timer_(io_context), 
-      rpc_(std::move(rpc)),
-      log_(std::move(log)),
-      current_term_(0), 
-      vote_(""), 
-      votes_received_(0), 
-      state_(ElectionRole::Follower), 
-      channel_(std::move(channel)),
-      snapshot_(std::move(snapshot)) {
+    CompletionQueue& cq)
+    : address_(address),
+      peer_ids_(peer_ids),
+      election_timer_(io_context),
+      heartbeat_timer_(io_context),
+      current_term_(0),
+      state_(ElectionRole::Follower),
+      vote_(""),
+      votes_received_(0) {
+    channel_ = std::make_unique<raft::CommitChannel>();
+    snapshot_ = std::make_unique<raft::Snapshot>("../store/" + address + "/");
+    rpc_ = std::make_unique<raft::RpcClient>(address, peer_ids, cq);
+    log_ = std::make_unique<raft::CommandLog>(peer_ids);
+    
     if (!snapshot_->Empty()) {
         RestoreFromStorage();
     }
@@ -150,7 +148,7 @@ void ConcensusModule::HeartbeatTimeout() {
 }
 
 void ConcensusModule::CommitEntry(const rpc::LogEntry& entry) {
-    std::lock_guard<std::mutex> guard(channel_->queue_mutex_);
+    std::unique_lock<std::mutex> guard(channel_->queue_mutex_);
     channel_->commit_queue_.push(entry);
     channel_->commit_notifier_.notify_one();
 }
