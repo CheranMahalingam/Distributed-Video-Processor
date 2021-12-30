@@ -11,10 +11,12 @@ CommandLog::CommandLog(const std::vector<std::string>& peer_ids)
 }
 
 void CommandLog::AppendLog(const rpc::LogEntry& entry) {
+    logger(LogLevel::Debug) << "Appending entry to log";
     entries_.push_back(entry);
 }
 
 void CommandLog::InsertLog(int idx, const std::vector<rpc::LogEntry>& new_entries) {
+    logger(LogLevel::Debug) << "Inserting entries to log, index =" << idx;
     std::vector<rpc::LogEntry> updated_log(entries_.begin(), entries_.begin() + idx);
     updated_log.insert(updated_log.begin(), new_entries.begin(), new_entries.end());
     entries_ = updated_log;

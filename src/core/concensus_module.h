@@ -41,7 +41,7 @@ public:
         std::unique_ptr<CommandLog> log, 
         std::unique_ptr<CommitChannel> channel,
         std::unique_ptr<Snapshot> snapshot);
-    
+
     void ElectionTimeout(const int term);
 
     void ResetToFollower(const int term);
@@ -83,6 +83,8 @@ private:
     void HeartbeatTimeout();
 
     void RestoreFromStorage();
+
+    std::string RandomString();
 
 private:
     std::string address_;

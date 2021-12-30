@@ -12,6 +12,7 @@ RpcClient::RpcClient(const std::string address, const std::vector<std::string>& 
 
 void RpcClient::RequestVote(const std::string peer_id, const rpc::RequestVoteRequest& request) {
     auto* call = new AsyncClientCall<rpc::RequestVoteRequest, rpc::RequestVoteResponse>;
+    call->request = request;
 
     call->response_reader = stubs_[peer_id]->PrepareAsyncRequestVote(&call->ctx, request, &cq_);
 
@@ -25,6 +26,7 @@ void RpcClient::RequestVote(const std::string peer_id, const rpc::RequestVoteReq
 
 void RpcClient::AppendEntries(const std::string peer_id, const rpc::AppendEntriesRequest& request) {
     auto* call = new AsyncClientCall<rpc::AppendEntriesRequest, rpc::AppendEntriesResponse>;
+    call->request = request;
 
     call->response_reader = stubs_[peer_id]->PrepareAsyncAppendEntries(&call->ctx, request, &cq_);
 

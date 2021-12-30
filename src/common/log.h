@@ -50,4 +50,8 @@ private:
     std::mutex log_mutex_;
 };
 
+#define logger(level) \
+if (level > LogLevel::Debug) ; \
+else Log(level)
+
 #endif

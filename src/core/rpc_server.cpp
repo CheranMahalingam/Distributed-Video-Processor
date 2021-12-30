@@ -39,7 +39,7 @@ void RpcServer::HandleRPC() {
                 }
             }
         } else {
-            Log(LogLevel::Error) << "RPC call failed";
+            logger(LogLevel::Error) << "RPC call failed";
         }
     }
 }
@@ -58,13 +58,13 @@ RpcServer::RequestVoteData::RequestVoteData(rpc::RaftService::AsyncService* serv
 void RpcServer::RequestVoteData::Proceed() {
     switch (status_) {
         case CallStatus::Create: {
-            Log(LogLevel::Info) << "Creating RequestVote reply...";
+            logger(LogLevel::Debug) << "Creating RequestVote reply...";
             status_ = CallStatus::Process;
             service_->RequestRequestVote(&ctx_, &request_, &responder_, scq_, scq_, (void*)&tag_);
             break;
         }
         case CallStatus::Process: {
-            Log(LogLevel::Info) << "Processing RequestVote reply...";
+            logger(LogLevel::Debug) << "Processing RequestVote reply...";
             new RequestVoteData{service_, scq_, cm_};
 
             if (cm_->state() == ConcensusModule::ElectionRole::Dead) {
@@ -77,7 +77,7 @@ void RpcServer::RequestVoteData::Proceed() {
             int last_log_term = cm_->log().LastLogTerm();
 
             if (request_.term() > cm_->current_term()) {
-                Log(LogLevel::Info) << "Term out of date in RequestVote RPC, changed from" << cm_->current_term() << "to" << request_.term();
+                logger(LogLevel::Debug) << "Term out of date in RequestVote RPC, changed from" << cm_->current_term() << "to" << request_.term();
                 cm_->ResetToFollower(request_.term());
             }
 
@@ -88,7 +88,7 @@ void RpcServer::RequestVoteData::Proceed() {
                (request_.lastlogterm() == last_log_term && request_.lastlogindex() >= last_log_index))) {
                 response_.set_votegranted(true);
                 cm_->set_vote(request_.candidateid());
-                Log(LogLevel::Info) << "Reset...";
+                logger(LogLevel::Debug) << "Reset...";
                 cm_->ElectionTimeout(request_.term());
             } else {
                 response_.set_votegranted(false);
@@ -115,13 +115,13 @@ RpcServer::AppendEntriesData::AppendEntriesData(rpc::RaftService::AsyncService* 
 void RpcServer::AppendEntriesData::Proceed() {
     switch (status_) {
         case CallStatus::Create: {
-            Log(LogLevel::Info) << "Creating AppendEntries reply...";
+            logger(LogLevel::Debug) << "Creating AppendEntries reply...";
             status_ = CallStatus::Process;
             service_->RequestAppendEntries(&ctx_, &request_, &responder_, scq_, scq_, (void*)&tag_);
             break;
         }
         case CallStatus::Process: {
-            Log(LogLevel::Info) << "Processing AppendEntries reply...";
+            logger(LogLevel::Debug) << "Processing AppendEntries reply...";
             new AppendEntriesData{service_, scq_, cm_};
 
             if (cm_->state() == ConcensusModule::ElectionRole::Dead) {
@@ -131,7 +131,7 @@ void RpcServer::AppendEntriesData::Proceed() {
             }
 
             if (request_.term() > cm_->current_term()) {
-                Log(LogLevel::Info) << "Term out of date in AppendEntries RPC, changed from" << cm_->current_term() << "to" << request_.term();
+                logger(LogLevel::Debug) << "Term out of date in AppendEntries RPC, changed from" << cm_->current_term() << "to" << request_.term();
                 cm_->ResetToFollower(request_.term());
             }
 
@@ -140,7 +140,7 @@ void RpcServer::AppendEntriesData::Proceed() {
                 if (cm_->state() != ConcensusModule::ElectionRole::Follower) {
                     cm_->ResetToFollower(request_.term());
                 } else {
-                    Log(LogLevel::Info) << "Reset...";
+                    logger(LogLevel::Debug) << "Resetting Election Timer...";
                     cm_->ElectionTimeout(request_.term());
                 }
 
@@ -170,7 +170,7 @@ void RpcServer::AppendEntriesData::Proceed() {
                     if (request_.leadercommit() > cm_->log().commit_index()) {
                         int new_commit_index = std::min((std::size_t)request_.leadercommit(), cm_->log().entries().size());
                         cm_->log().set_commit_index(new_commit_index);
-                        Log(LogLevel::Info) << "Setting commit index =" << new_commit_index;
+                        logger(LogLevel::Debug) << "Setting commit index =" << new_commit_index;
 
                         while (cm_->log().last_applied() < new_commit_index) {
                             cm_->log().increment_last_applied();

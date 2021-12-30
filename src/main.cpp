@@ -50,7 +50,7 @@ int main(int argc, char* argv[]) {
     std::thread reply_queue_loop(&raft::ClientCallbackQueue::AsyncRpcResponseHandler, reply_queue.get());
 
     boost::asio::steady_timer start_cluster(io);
-    start_cluster.expires_from_now(std::chrono::seconds(10));
+    start_cluster.expires_from_now(std::chrono::seconds(5));
     start_cluster.wait();
     cm->ElectionTimeout(cm->current_term());
     io.run();

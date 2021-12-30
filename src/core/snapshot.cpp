@@ -3,7 +3,7 @@
 namespace raft {
 
 Snapshot::Snapshot(const std::string dir) {
-    std::filesystem::create_directory(dir);
+    std::filesystem::create_directories(dir);
     log_file_ = dir + "log";
     state_file_ = dir + "state";
 }
@@ -15,19 +15,21 @@ void Snapshot::PersistState(const int term, const std::string vote_id) {
     state.set_term(term);
     state.set_voteid(vote_id);
     SerializeDelimitedToOstream(state, &out);
+    logger(LogLevel::Debug) << "Persisted state to disk";
 
     out.close();
 }
 
 void Snapshot::PersistLog(const std::vector<rpc::LogEntry>& entries, const bool append) {
     auto flags = std::ios::out | std::ios::binary;
-    if (append) {
-        flags |= std::ios::app;
+    if (!append) {
+        flags |= std::ios::trunc;
     }
     std::fstream out(log_file_, flags);
     for (auto &entry:entries) {
         SerializeDelimitedToOstream(entry, &out);
     }
+    logger(LogLevel::Debug) << "Persisted log to disk";
 }
 
 std::tuple<int, std::string> Snapshot::RestoreState() {
@@ -37,7 +39,7 @@ std::tuple<int, std::string> Snapshot::RestoreState() {
     rpc::State state;
     ParseDelimitedFromZeroCopyStream(&state, &state_stream, nullptr);
 
-    Log(LogLevel::Info) << "term =" << state.term() << "voteId =" << state.voteid();
+    logger(LogLevel::Debug) << "Restoring from disk, term =" << state.term() << "voteId =" << state.voteid();
 
     in.close();
 
@@ -52,6 +54,7 @@ std::vector<rpc::LogEntry> Snapshot::RestoreLog() {
     rpc::LogEntry entry;
     while (ParseDelimitedFromZeroCopyStream(&entry, &log_stream, nullptr)) {
         entries.push_back(entry);
+        // logger(LogLevel::Info) << entry.command();
     }
 
     in.close();
