@@ -67,28 +67,35 @@ void RpcServer::RequestVoteData::Proceed() {
             logger(LogLevel::Debug) << "Processing RequestVote reply...";
             new RequestVoteData{service_, scq_, cm_};
 
+            // If the node is dead responds with failure
             if (cm_->state() == ConcensusModule::ElectionRole::Dead) {
                 status_ = CallStatus::Finish;
                 responder_.Finish(response_, Status::CANCELLED, (void*)&tag_);
                 break;
             }
 
-            int last_log_index = cm_->log().LastLogIndex();
-            int last_log_term = cm_->log().LastLogTerm();
+            int last_log_index = cm_->log_->LastLogIndex();
+            int last_log_term = cm_->log_->LastLogTerm();
 
+            // If the concensus module term is out of date the term and state are reset
             if (request_.term() > cm_->current_term()) {
                 logger(LogLevel::Debug) << "Term out of date in RequestVote RPC, changed from" << cm_->current_term() << "to" << request_.term();
                 cm_->ResetToFollower(request_.term());
             }
 
-            // Election safety to prevent node with out of date logs to be elected
-            if (request_.term() == cm_->current_term() && 
+            // Ensure that the node has not voted for a different node
+            // Ensure that the request log term is not out of date
+            // request log terms: 1, 2, 2, 3   node log terms: 1, 2, 2, 3, 4     INVALID
+            // request log terms: 1, 2, 2      node log terms: 1, 2, 2, 2        INVALID
+            // request log terms: 1, 2, 3, 3   node log terms: 1, 2, 3           VALID
+            if (request_.term() == cm_->current_term() &&
                (cm_->vote() == "" || cm_->vote() == request_.candidateid()) &&
                (request_.lastlogterm() > last_log_term ||
                (request_.lastlogterm() == last_log_term && request_.lastlogindex() >= last_log_index))) {
                 response_.set_votegranted(true);
                 cm_->set_vote(request_.candidateid());
-                logger(LogLevel::Debug) << "Reset...";
+
+                logger(LogLevel::Debug) << "Resetting election timer...";
                 cm_->ElectionTimeout(request_.term());
             } else {
                 response_.set_votegranted(false);
@@ -124,12 +131,14 @@ void RpcServer::AppendEntriesData::Proceed() {
             logger(LogLevel::Debug) << "Processing AppendEntries reply...";
             new AppendEntriesData{service_, scq_, cm_};
 
+            // If the node is dead responds with failure
             if (cm_->state() == ConcensusModule::ElectionRole::Dead) {
                 status_ = CallStatus::Finish;
                 responder_.Finish(response_, Status::CANCELLED, (void*)&tag_);
                 break;
             }
 
+            // If the concensus module term is out of date the term and state are reset
             if (request_.term() > cm_->current_term()) {
                 logger(LogLevel::Debug) << "Term out of date in AppendEntries RPC, changed from" << cm_->current_term() << "to" << request_.term();
                 cm_->ResetToFollower(request_.term());
@@ -137,6 +146,7 @@ void RpcServer::AppendEntriesData::Proceed() {
 
             bool success = false;
             if (request_.term() == cm_->current_term()) {
+                // Acknowledging the Heartbeat means the server knows a healthy leader exists so the election timer is reset
                 if (cm_->state() != ConcensusModule::ElectionRole::Follower) {
                     cm_->ResetToFollower(request_.term());
                 } else {
@@ -146,37 +156,38 @@ void RpcServer::AppendEntriesData::Proceed() {
 
                 // Attempt to update log if term is consistent between leader and follower at log index
                 if (request_.prevlogindex() == -1 ||
-                    (request_.prevlogindex() < cm_->log().entries().size() && request_.prevlogterm() == cm_->log().entries()[request_.prevlogindex()].term())) {
+                    (request_.prevlogindex() < cm_->log_->entries().size() && request_.prevlogterm() == cm_->log_->entries()[request_.prevlogindex()].term())) {
                     success = true;
 
                     int log_insert_index = request_.prevlogindex() + 1;
                     int new_entries_index = 0;
 
                     // Search for a point where there is a mismatch of terms between the existing logs and the new entries
-                    while (log_insert_index < cm_->log().entries().size() && 
+                    while (log_insert_index < cm_->log_->entries().size() && 
                         new_entries_index < request_.entries().size() && 
-                        cm_->log().entries()[log_insert_index].term() == request_.entries()[new_entries_index].term()) {
+                        cm_->log_->entries()[log_insert_index].term() == request_.entries()[new_entries_index].term()) {
                         log_insert_index++;
                         new_entries_index++;
                     }
 
-                    // Update followers log with new entries
+                    // Update log with new entries from leader
                     if (new_entries_index < request_.entries().size()) {
                         std::vector<rpc::LogEntry> new_entries(request_.entries().begin() + new_entries_index, request_.entries().end());
-                        cm_->log().InsertLog(log_insert_index, new_entries);
-                        cm_->PersistLogToStorage(cm_->log().entries(), false);
+                        cm_->log_->InsertLog(log_insert_index, new_entries);
+                        cm_->PersistLogToStorage(cm_->log_->entries(), false);
                     }
 
-                    if ((int)request_.leadercommit() > cm_->log().commit_index()) {
-                        int new_commit_index = std::min((std::size_t)request_.leadercommit(), cm_->log().entries().size());
-                        cm_->log().set_commit_index(new_commit_index);
+                    // If the commit index is behind, apply the entries committed by the leader
+                    if ((int)request_.leadercommit() > cm_->log_->commit_index()) {
+                        int new_commit_index = std::min((std::size_t)request_.leadercommit(), cm_->log_->entries().size());
+                        cm_->log_->set_commit_index(new_commit_index);
                         logger(LogLevel::Debug) << "Setting commit index =" << new_commit_index;
 
-                        while (cm_->log().last_applied() < new_commit_index) {
-                            cm_->log().increment_last_applied();
+                        while (cm_->log_->last_applied() < new_commit_index) {
+                            cm_->log_->increment_last_applied();
 
-                            int last_applied = cm_->log().last_applied();
-                            rpc::LogEntry uncommitted_entry = cm_->log().entries()[last_applied];
+                            int last_applied = cm_->log_->last_applied();
+                            rpc::LogEntry uncommitted_entry = cm_->log_->entries()[last_applied];
                             cm_->CommitEntry(uncommitted_entry);
                         }
                     }

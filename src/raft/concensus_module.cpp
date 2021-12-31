@@ -19,7 +19,8 @@ ConcensusModule::ConcensusModule(
     snapshot_ = std::make_unique<raft::Snapshot>("../store/" + address + "/");
     rpc_ = std::make_unique<raft::RpcClient>(address, peer_ids, cq);
     log_ = std::make_unique<raft::CommandLog>(peer_ids);
-    
+
+    // After the node crashes, restore the state and log from disk
     if (!snapshot_->Empty()) {
         RestoreFromStorage();
     }
@@ -40,6 +41,7 @@ void ConcensusModule::ElectionCallback(const int term) {
 
     state_ = ElectionRole::Candidate;
     current_term_++;
+    // Reference when handling responses to verify that term is not out of date
     int saved_term = current_term();
     set_vote(address_);
     votes_received_ = 1;
@@ -67,6 +69,7 @@ void ConcensusModule::HeartbeatCallback() {
         return;
     }
 
+    // Reference when handling responses to verify that term is not out of date
     int saved_term = current_term();
 
     for (auto peer_id:peer_ids_) {
@@ -125,6 +128,7 @@ void ConcensusModule::ResetToFollower(const int term) {
 void ConcensusModule::ElectionTimeout(const int term) {
     int random_timeout = std::rand() % 151 + 150;
     logger(LogLevel::Debug) << "Election timer created:" << random_timeout << "ms";
+    // Create random timeout to avoid election with split votes
     election_timer_.expires_after(std::chrono::milliseconds(random_timeout));
     election_timer_.async_wait([this, term](const boost::system::error_code& err) {
         if (!err) {
@@ -148,6 +152,7 @@ void ConcensusModule::HeartbeatTimeout() {
 }
 
 void ConcensusModule::CommitEntry(const rpc::LogEntry& entry) {
+    // Notify commit queue thread to apply the new command
     std::unique_lock<std::mutex> guard(channel_->queue_mutex_);
     channel_->commit_queue_.push(entry);
     channel_->commit_notifier_.notify_one();
@@ -175,6 +180,7 @@ void ConcensusModule::RestoreFromStorage() {
     auto entries = snapshot_->RestoreLog();
     log_->set_entries(entries);
 
+    // next_index should be updated to indicate where to append in log for each node
     for (auto peer_id:peer_ids_) {
         log_->set_next_index(peer_id, log_->entries().size());
     }
@@ -214,10 +220,6 @@ int ConcensusModule::votes_received() const {
 
 std::vector<std::string> ConcensusModule::peer_ids() const {
     return peer_ids_;
-}
-
-CommandLog& ConcensusModule::log() const {
-    return *log_;
 }
 
 }

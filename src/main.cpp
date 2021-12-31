@@ -4,22 +4,18 @@
 #include <vector>
 #include <memory>
 #include <thread>
-#include <mutex>
 
 #include "concensus_module.h"
-#include "rpc_client.h"
 #include "rpc_server.h"
 #include "client_callback_queue.h"
-#include "command_log.h"
-#include "snapshot.h"
 #include "commit_channel.h"
-#include "raft.grpc.pb.h"
 
 using work_guard_type = boost::asio::executor_work_guard<boost::asio::io_context::executor_type>;
 using grpc::CompletionQueue;
 
 int main(int argc, char* argv[]) {
     boost::asio::io_context io;
+    // Prevents io_context from returning
     work_guard_type work_guard(io.get_executor());
 
     std::string address = argv[1];
@@ -41,6 +37,7 @@ int main(int argc, char* argv[]) {
     start_cluster.expires_from_now(std::chrono::seconds(5));
     start_cluster.wait();
     cm->ElectionTimeout(cm->current_term());
+    // All async callbacks will be handled on the main thread
     io.run();
 
     server_event_loop.join();

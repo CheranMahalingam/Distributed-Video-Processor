@@ -67,8 +67,6 @@ public:
 
     std::vector<std::string> peer_ids() const;
 
-    CommandLog& log() const;
-
 private:
     void ElectionCallback(const int term);
 
@@ -86,12 +84,12 @@ private:
 
 public:
     std::unique_ptr<CommitChannel> channel_;
+    std::unique_ptr<CommandLog> log_;
 
 private:
     std::string address_;
     std::vector<std::string> peer_ids_;
     std::unique_ptr<RpcClient> rpc_;
-    std::unique_ptr<CommandLog> log_;
     std::unique_ptr<Snapshot> snapshot_;
     boost::asio::steady_timer election_timer_;
     boost::asio::steady_timer heartbeat_timer_;

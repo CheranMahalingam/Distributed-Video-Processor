@@ -11,6 +11,7 @@ void CommitChannel::ConsumeEvents() {
 
         std::unique_lock<std::mutex> guard(queue_mutex_);
 
+        // pub/sub queue waits for new work
         commit_notifier_.wait(guard, [&]{ return !commit_queue_.empty(); });
 
         commit = commit_queue_.front();

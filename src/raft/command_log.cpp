@@ -21,11 +21,7 @@ void CommandLog::InsertLog(int idx, const std::vector<rpc::LogEntry>& new_entrie
 }
 
 int CommandLog::LastLogIndex() {
-    if (entries_.size() > 0) {
-        return entries_.size() - 1;
-    } else {
-        return -1;
-    }
+    return entries_.size() - 1;
 }
 
 int CommandLog::LastLogTerm() {

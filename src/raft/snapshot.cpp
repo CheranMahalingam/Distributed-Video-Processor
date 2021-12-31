@@ -22,10 +22,10 @@ void Snapshot::PersistState(const int term, const std::string vote_id) {
 
 void Snapshot::PersistLog(const std::vector<rpc::LogEntry>& entries, const bool append) {
     auto flags = std::ios::out | std::ios::binary;
-    if (!append) {
-        flags |= std::ios::trunc;
-    } else {
+    if (append) {
         flags |= std::ios::app;
+    } else {
+        flags |= std::ios::trunc;
     }
     std::fstream out(log_file_, flags);
     for (auto &entry:entries) {
@@ -41,7 +41,7 @@ std::tuple<int, std::string> Snapshot::RestoreState() {
     rpc::State state;
     ParseDelimitedFromZeroCopyStream(&state, &state_stream, nullptr);
 
-    logger(LogLevel::Debug) << "Restoring from disk, term =" << state.term() << "voteId =" << state.voteid();
+    logger(LogLevel::Debug) << "Restoring state from disk, term =" << state.term() << "voteId =" << state.voteid();
 
     in.close();
 
@@ -57,6 +57,8 @@ std::vector<rpc::LogEntry> Snapshot::RestoreLog() {
     while (ParseDelimitedFromZeroCopyStream(&entry, &log_stream, nullptr)) {
         entries.push_back(entry);
     }
+
+    logger(LogLevel::Debug) << "Restoring log from disk, size =" << entries.size();
 
     in.close();
 

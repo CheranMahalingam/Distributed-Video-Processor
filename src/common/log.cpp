@@ -3,10 +3,12 @@
 Log::Log(LogLevel level) : level_(level) {}
 
 Log::~Log() {
+    // Write while being destroyed to be thread safe
     LogBuffer::Logger().Write(level_, buffer_.str());
 }
 
 LogBuffer& LogBuffer::Logger() {
+    // Keep single instance of logger
     static LogBuffer instance;
     return instance;
 }
