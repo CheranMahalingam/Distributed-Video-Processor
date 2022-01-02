@@ -24,7 +24,7 @@ void CommitChannel::ConsumeEvents() {
 }
 
 void CommitChannel::ApplyCommit(const rpc::LogEntry& commit) {
-    logger(LogLevel::Info) << "Applying commit, term =" << commit.term() << "command =" << commit.command();
+    // logger(LogLevel::Info) << "Applying commit, term =" << commit.term() << "command =" << commit.command();
 }
 
 }

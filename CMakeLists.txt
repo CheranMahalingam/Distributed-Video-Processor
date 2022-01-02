@@ -28,7 +28,7 @@ else()
     FetchContent_Declare(
         protobuf
         GIT_REPOSITORY https://github.com/protocolbuffers/protobuf
-        GIT_TAG        v3.19.1
+        GIT_TAG        v3.6.1
     )
     set(FETCHCONTENT_QUIET OFF)
     FetchContent_MakeAvailable(protobuf)
@@ -47,6 +47,14 @@ else()
     set(FETCHCONTENT_QUIET OFF)
     FetchContent_MakeAvailable(gRPC)
 endif()
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
+    libavdevice
+    libavfilter
+    libavformat
+    libavcodec
+    libavutil)
 
 message(STATUS "Using boost ${Boost_VERSION}")
 message(STATUS "Using protobuf ${Protobuf_VERSION}")

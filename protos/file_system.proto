@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package storage;
+
+service FileSystemService {
+    rpc UploadChunk (UploadChunkRequest) returns (UploadChunkResponse) {}
+    rpc DownloadChunk (DownloadChunkRequest) returns (DownloadChunkResponse) {}
+    rpc DeleteChunk (DeleteChunkRequest) returns (DeleteChunkResponse) {}
+}
+
+message Chunk {
+    ChunkMetadata metadata = 1;
+    bytes data = 2;
+}
+
+message ChunkMetadata {
+    string videoId = 1;
+    uint32 version = 2;
+    uint32 sequence = 3;
+    bool last = 4;
+}
+
+message ChunkDeletionIdentifier {
+    string path = 1;
+}
+
+message UploadChunkRequest {
+    string id = 1;
+    uint32 version = 2;
+    uint32 offset = 3;
+    bytes data = 4;
+}
+
+message UploadChunkResponse {
+    bool success = 1;
+}
+
+message DownloadChunkRequest {
+    string filename = 1;
+    uint32 version = 2;
+}
+
+message DownloadChunkResponse {
+    bool success = 1;
+    bytes data = 2;
+}
+
+message DeleteChunkRequest {
+    string filename = 1;
+    uint32 version = 2;
+}
+
+message DeleteChunkResponse {
+    bool success = 1;
+}

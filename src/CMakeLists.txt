@@ -1,32 +1,36 @@
-get_filename_component(raft_proto "../protos/raft.proto" ABSOLUTE)
-get_filename_component(raft_proto_path "${raft_proto}" PATH)
+foreach(target raft file_system)
+    get_filename_component(proto "../protos/${target}.proto" ABSOLUTE)
+    get_filename_component(proto_path "${proto}" PATH)
+    set(proto_srcs "${PROJECT_SOURCE_DIR}/protogen/${target}.pb.cc")
+    set(proto_hdrs "${PROJECT_SOURCE_DIR}/protogen/${target}.pb.h")
+    set(grpc_srcs "${PROJECT_SOURCE_DIR}/protogen/${target}.grpc.pb.cc")
+    set(grpc_hdrs "${PROJECT_SOURCE_DIR}/protogen/${target}.grpc.pb.h")
 
-set(raft_proto_srcs "${PROJECT_SOURCE_DIR}/protogen/raft.pb.cc")
-set(raft_proto_hdrs "${PROJECT_SOURCE_DIR}/protogen/raft.pb.h")
-set(raft_grpc_srcs "${PROJECT_SOURCE_DIR}/protogen/raft.grpc.pb.cc")
-set(raft_grpc_hdrs "${PROJECT_SOURCE_DIR}/protogen/raft.grpc.pb.h")
-add_custom_command(
-    OUTPUT "${raft_proto_srcs}" "${raft_proto_hdrs}" "${raft_grpc_srcs}" "${raft_grpc_hdrs}"
-    COMMAND ${_PROTOBUF_PROTOC}
-    ARGS --grpc_out "${PROJECT_SOURCE_DIR}/protogen"
-        --cpp_out "${PROJECT_SOURCE_DIR}/protogen"
-        -I "${raft_proto_path}"
-        --plugin=protoc-gen-grpc="${_GRPC_CPP_PLUGIN_EXECUTABLE}"
-        "${raft_proto}"
-    DEPENDS "${raft_proto}")
+    add_custom_command(
+        OUTPUT "${proto_srcs}" "${proto_hdrs}" "${grpc_srcs}" "${grpc_hdrs}"
+        COMMAND ${_PROTOBUF_PROTOC}
+        ARGS --grpc_out "${PROJECT_SOURCE_DIR}/protogen"
+            --cpp_out "${PROJECT_SOURCE_DIR}/protogen"
+            -I "${proto_path}"
+            --plugin=protoc-gen-grpc="${_GRPC_CPP_PLUGIN_EXECUTABLE}"
+            "${proto}"
+        DEPENDS "${proto}")
 
-add_library(raft_grpc_proto
-    ${raft_grpc_srcs}
-    ${raft_grpc_hdrs}
-    ${raft_proto_srcs}
-    ${raft_proto_hdrs})
-target_link_libraries(raft_grpc_proto
-    grpc++_reflection
-    grpc++
-    libprotoc
-    libprotobuf)
+    add_library("grpc_${target}_proto"
+        ${grpc_srcs}
+        ${grpc_hdrs}
+        ${proto_srcs}
+        ${proto_hdrs})
 
-add_executable(VideoProcessor 
+    target_link_libraries("grpc_${target}_proto"
+        grpc++_reflection
+        grpc++
+        libprotoc
+        libprotobuf)
+endforeach()
+
+add_executable(VideoProcessor
+    common/log.cpp
     raft/rpc_server.cpp
     raft/rpc_client.cpp 
     raft/client_callback_queue.cpp 
@@ -34,12 +38,16 @@ add_executable(VideoProcessor
     raft/command_log.cpp
     raft/snapshot.cpp
     raft/commit_channel.cpp
-    common/log.cpp
+    file_system/chunk_manager.cpp
     main.cpp)
 target_link_libraries(VideoProcessor
-    raft_grpc_proto)
+    grpc_raft_proto
+    grpc_file_system_proto
+    PkgConfig::LIBAV)
 target_include_directories(VideoProcessor
     PRIVATE
     common
     raft
+    file_system
+    processor
     "${PROJECT_SOURCE_DIR}/protogen")

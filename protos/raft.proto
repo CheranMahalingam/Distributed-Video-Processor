@@ -2,32 +2,12 @@ syntax = "proto3";
 
 package rpc;
 
+import "file_system.proto";
+
 service RaftService {
     rpc RequestVote (RequestVoteRequest) returns (RequestVoteResponse) {}
     rpc AppendEntries (AppendEntriesRequest) returns (AppendEntriesResponse) {}
 }
-
-// enum CommandType {
-//     HELLO = 0;
-//     VIDEO = 1;
-// }
-
-// message HelloRequest {
-//     uint32 id = 1;
-// }
-
-// message VideoRequest {
-//     uint32 id = 1;
-//     bytes buffer = 2;
-// }
-
-// message Command {
-//     CommandType id = 1;
-//     oneof Args {
-//         HelloRequest hello = 2;
-//         VideoRequest video = 3;
-//     }
-// }
 
 message RequestVoteRequest {
     uint32 term = 1;
@@ -57,10 +37,23 @@ message AppendEntriesResponse {
 
 message LogEntry {
     uint32 term = 1;
-    string command = 2;
+    Command command = 2;
 }
 
 message State {
     uint32 term = 1;
     string voteId = 2;
+}
+
+enum CommandType {
+    UPLOAD = 0;
+    DELETE = 1;
+}
+
+message Command {
+    CommandType id = 1;
+    oneof Args {
+        storage.ChunkMetadata metadata = 2;
+        storage.ChunkDeletionIdentifier chunkId = 3;
+    }
 }

@@ -6,6 +6,7 @@ Prerequisites:
 - boost >=1.71.0
 - protobuf >=3.6.0
 - grpc >=1.41.0
+- ffmpeg >=4.2.4
 
 > Note: Currently only compiles on *nix based systems
 

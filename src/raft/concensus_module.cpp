@@ -16,7 +16,7 @@ ConcensusModule::ConcensusModule(
       vote_(""),
       votes_received_(0) {
     channel_ = std::make_unique<raft::CommitChannel>();
-    snapshot_ = std::make_unique<raft::Snapshot>("../store/" + address + "/");
+    snapshot_ = std::make_unique<raft::Snapshot>("../raft_store/" + address + "/");
     rpc_ = std::make_unique<raft::RpcClient>(address, peer_ids, cq);
     log_ = std::make_unique<raft::CommandLog>(peer_ids);
 
@@ -162,7 +162,7 @@ void ConcensusModule::Submit(const std::string command) {
     if (state_ == ElectionRole::Leader) {
         rpc::LogEntry new_entry;
         new_entry.set_term(current_term());
-        new_entry.set_command(command);
+        // new_entry.set_command(command);
         log_->AppendLog(new_entry);
         PersistLogToStorage({new_entry}, true);
     }

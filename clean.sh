@@ -1,3 +1,3 @@
 #!/bin/bash
 
-rm -rf build/store
+rm -rf build/raft_store
