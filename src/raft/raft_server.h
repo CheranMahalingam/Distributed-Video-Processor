@@ -1,5 +1,5 @@
-#ifndef RPC_SERVER_H
-#define RPC_SERVER_H
+#ifndef RAFT_SERVER_H
+#define RAFT_SERVER_H
 
 #include <vector>
 #include <memory>
@@ -9,7 +9,7 @@
 
 #include "concensus_module.h"
 #include "log.h"
-#include "raft_msg_defs.h"
+#include "grpc_msg_defs.h"
 #include "raft.grpc.pb.h"
 
 namespace raft {
@@ -21,22 +21,21 @@ using grpc::ServerContext;
 using grpc::ServerAsyncResponseWriter;
 using grpc::Status;
 
-class RpcServer {
+class RaftServer {
 public:
-    RpcServer(
-        boost::asio::io_context& io_context, 
+    RaftServer(
         const std::string address, 
         const std::vector<std::string>& peer_ids, 
         std::shared_ptr<ConcensusModule> cm);
 
-    ~RpcServer();
+    ~RaftServer();
 
     void HandleRPC();
 
 private:
     struct Tag {
         void* call;
-        MessageID id;
+        RaftMessageID id;
     };
 
     class CallData {
@@ -85,7 +84,6 @@ private:
     };
 
 private:
-    boost::asio::io_context& io_;
     rpc::RaftService::AsyncService service_;
     std::unique_ptr<ServerCompletionQueue> scq_;
     std::unique_ptr<Server> server_;

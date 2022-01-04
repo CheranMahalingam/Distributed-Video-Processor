@@ -31,14 +31,15 @@ endforeach()
 
 add_executable(VideoProcessor
     common/log.cpp
-    raft/rpc_server.cpp
-    raft/rpc_client.cpp 
+    raft/raft_server.cpp
+    raft/raft_client.cpp 
     raft/client_callback_queue.cpp 
     raft/concensus_module.cpp
     raft/command_log.cpp
     raft/snapshot.cpp
     raft/commit_channel.cpp
     file_system/chunk_manager.cpp
+    file_system/chunk_server.cpp
     main.cpp)
 target_link_libraries(VideoProcessor
     grpc_raft_proto

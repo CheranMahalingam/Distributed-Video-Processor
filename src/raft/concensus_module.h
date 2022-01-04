@@ -10,7 +10,7 @@
 #include <tuple>
 #include <random>
 
-#include "rpc_client.h"
+#include "raft_client.h"
 #include "command_log.h"
 #include "commit_channel.h"
 #include "snapshot.h"
@@ -89,7 +89,7 @@ public:
 private:
     std::string address_;
     std::vector<std::string> peer_ids_;
-    std::unique_ptr<RpcClient> rpc_;
+    std::unique_ptr<RaftClient> rpc_;
     std::unique_ptr<Snapshot> snapshot_;
     boost::asio::steady_timer election_timer_;
     boost::asio::steady_timer heartbeat_timer_;

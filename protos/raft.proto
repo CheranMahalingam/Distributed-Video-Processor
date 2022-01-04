@@ -53,7 +53,7 @@ enum CommandType {
 message Command {
     CommandType id = 1;
     oneof Args {
-        storage.ChunkMetadata metadata = 2;
+        storage.Chunk chunk = 2;
         storage.ChunkDeletionIdentifier chunkId = 3;
     }
 }

@@ -17,7 +17,7 @@ ConcensusModule::ConcensusModule(
       votes_received_(0) {
     channel_ = std::make_unique<raft::CommitChannel>();
     snapshot_ = std::make_unique<raft::Snapshot>("../raft_store/" + address + "/");
-    rpc_ = std::make_unique<raft::RpcClient>(address, peer_ids, cq);
+    rpc_ = std::make_unique<raft::RaftClient>(address, peer_ids, cq);
     log_ = std::make_unique<raft::CommandLog>(peer_ids);
 
     // After the node crashes, restore the state and log from disk

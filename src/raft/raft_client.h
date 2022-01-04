@@ -1,5 +1,5 @@
-#ifndef RPC_CLIENT_H
-#define RPC_CLIENT_H
+#ifndef RAFT_CLIENT_H
+#define RAFT_CLIENT_H
 
 #include <grpc++/grpc++.h>
 #include <string>
@@ -8,7 +8,7 @@
 #include <unordered_map>
 
 #include "log.h"
-#include "raft_msg_defs.h"
+#include "grpc_msg_defs.h"
 #include "raft.grpc.pb.h"
 
 namespace raft {
@@ -19,9 +19,9 @@ using grpc::ClientContext;
 using grpc::ClientAsyncResponseReader;
 using grpc::Status;
 
-class RpcClient {
+class RaftClient {
 public:
-    RpcClient(const std::string address, const std::vector<std::string>& peer_ids, CompletionQueue& cq);
+    RaftClient(const std::string address, const std::vector<std::string>& peer_ids, CompletionQueue& cq);
 
     void RequestVote(const std::string peer_id, const rpc::RequestVoteRequest& request);
 
@@ -30,7 +30,7 @@ public:
 private:
     struct Tag {
         void* call;
-        MessageID id;
+        RaftMessageID id;
     };
 
     template <class RequestType, class ResponseType>

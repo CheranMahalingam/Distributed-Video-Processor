@@ -24,7 +24,15 @@ void CommitChannel::ConsumeEvents() {
 }
 
 void CommitChannel::ApplyCommit(const rpc::LogEntry& commit) {
-    // logger(LogLevel::Info) << "Applying commit, term =" << commit.term() << "command =" << commit.command();
+    logger(LogLevel::Info) << "Applying commit, term =" << commit.term() << "command =" << commit.command().id();
+    switch(commit.command().id()) {
+        case rpc::CommandType::UPLOAD: {
+            // TODO: Connect to chunk manager to write chunks
+        }
+        case rpc::CommandType::DELETE: {
+            // TODO: Connect to chunk manager to delete chunks
+        }
+    }
 }
 
 }

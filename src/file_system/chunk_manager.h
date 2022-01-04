@@ -3,9 +3,11 @@
 
 #include <fstream>
 #include <filesystem>
+#include <memory>
 #include <string>
 #include <sstream>
 #include <vector>
+#include <cmath>
 #include <google/protobuf/util/delimited_message_util.h>
 
 #include "log.h"
@@ -21,14 +23,20 @@ class ChunkManager {
 public:
     ChunkManager(std::string address, std::string dir, int chunk_size);
 
+    std::vector<storage::Chunk> CreateChunks(std::string video_id, int version, const std::string& data);
+
     storage::Chunk ReadFromChunk(std::string video_id, int version, int sequence);
 
-    std::vector<storage::Chunk> WriteToChunk(std::string video_id, int version, std::string data);
+    void WriteToChunk(const storage::Chunk& chunk);
 
-    storage::ChunkDeletionIdentifier DeleteChunk(std::string video_id, int version, int sequence);
+    void DeleteChunks(std::string video_id, int version);
 
 private:
     std::string Filename(std::string video_id, int version, int sequence);
+
+    void DeleteFile(std::string path);
+
+    int ChunkCount(std::string video_id, int version);
 
 private:
     std::string address_;

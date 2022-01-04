@@ -1,13 +1,12 @@
-#include "rpc_server.h"
+#include "raft_server.h"
 
 namespace raft {
 
-RpcServer::RpcServer(
-    boost::asio::io_context& io_context, 
+RaftServer::RaftServer(
     const std::string address, 
     const std::vector<std::string>& peer_ids, 
     std::shared_ptr<ConcensusModule> cm)
-    : io_(io_context), cm_(cm) {
+    : cm_(cm) {
     ServerBuilder builder;
     builder.AddListeningPort(address, grpc::InsecureServerCredentials());
     builder.RegisterService(&service_);
@@ -15,12 +14,12 @@ RpcServer::RpcServer(
     server_ = builder.BuildAndStart();
 }
 
-RpcServer::~RpcServer() {
+RaftServer::~RaftServer() {
     server_->Shutdown();
     scq_->Shutdown();
 }
 
-void RpcServer::HandleRPC() {
+void RaftServer::HandleRPC() {
     new RequestVoteData{&service_, scq_.get(), cm_.get()};
     new AppendEntriesData{&service_, scq_.get(), cm_.get()};
     void* tag;
@@ -29,11 +28,11 @@ void RpcServer::HandleRPC() {
         if (scq_->Next(&tag, &ok) && ok) {
             auto* tag_ptr = static_cast<Tag*>(tag);
             switch (tag_ptr->id) {
-                case MessageID::RequestVote: {
+                case RaftMessageID::RequestVote: {
                     static_cast<RequestVoteData*>(tag_ptr->call)->Proceed();
                     break;
                 }
-                case MessageID::AppendEntries: {
+                case RaftMessageID::AppendEntries: {
                     static_cast<AppendEntriesData*>(tag_ptr->call)->Proceed();
                     break;
                 }
@@ -44,18 +43,18 @@ void RpcServer::HandleRPC() {
     }
 }
 
-RpcServer::CallData::CallData(rpc::RaftService::AsyncService* service, ServerCompletionQueue* scq, ConcensusModule* cm)
+RaftServer::CallData::CallData(rpc::RaftService::AsyncService* service, ServerCompletionQueue* scq, ConcensusModule* cm)
     : service_(service), scq_(scq), cm_(cm), status_(CallStatus::Create) {
 }
 
-RpcServer::RequestVoteData::RequestVoteData(rpc::RaftService::AsyncService* service, ServerCompletionQueue* scq, ConcensusModule* cm) 
+RaftServer::RequestVoteData::RequestVoteData(rpc::RaftService::AsyncService* service, ServerCompletionQueue* scq, ConcensusModule* cm) 
     : CallData{service, scq, cm}, responder_(&ctx_) {
-    tag_.id = MessageID::RequestVote;
+    tag_.id = RaftMessageID::RequestVote;
     tag_.call = this;
     Proceed();
 }
 
-void RpcServer::RequestVoteData::Proceed() {
+void RaftServer::RequestVoteData::Proceed() {
     switch (status_) {
         case CallStatus::Create: {
             logger(LogLevel::Debug) << "Creating RequestVote reply...";
@@ -112,14 +111,14 @@ void RpcServer::RequestVoteData::Proceed() {
     }
 }
 
-RpcServer::AppendEntriesData::AppendEntriesData(rpc::RaftService::AsyncService* service, ServerCompletionQueue* scq, ConcensusModule* cm) 
+RaftServer::AppendEntriesData::AppendEntriesData(rpc::RaftService::AsyncService* service, ServerCompletionQueue* scq, ConcensusModule* cm) 
     : CallData{service, scq, cm}, responder_(&ctx_) {
-    tag_.id = MessageID::AppendEntries;
+    tag_.id = RaftMessageID::AppendEntries;
     tag_.call = this;
     Proceed();
 }
 
-void RpcServer::AppendEntriesData::Proceed() {
+void RaftServer::AppendEntriesData::Proceed() {
     switch (status_) {
         case CallStatus::Create: {
             logger(LogLevel::Debug) << "Creating AppendEntries reply...";

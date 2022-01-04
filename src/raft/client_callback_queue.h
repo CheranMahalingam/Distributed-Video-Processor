@@ -8,7 +8,7 @@
 
 #include "concensus_module.h"
 #include "log.h"
-#include "raft_msg_defs.h"
+#include "grpc_msg_defs.h"
 #include "raft.grpc.pb.h"
 
 namespace raft {
@@ -41,7 +41,7 @@ private:
 private:
     struct Tag {
         void* call;
-        MessageID id;
+        RaftMessageID id;
     };
 
     std::vector<std::string> peer_ids_;

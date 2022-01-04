@@ -14,7 +14,7 @@ void ClientCallbackQueue::AsyncRpcResponseHandler() {
 
         auto* tag_ptr = static_cast<Tag*>(tag);
         switch (tag_ptr->id) {
-            case MessageID::RequestVote: {
+            case RaftMessageID::RequestVote: {
                 auto* call = static_cast<AsyncClientCall<rpc::RequestVoteRequest, rpc::RequestVoteResponse>*>(tag_ptr->call);
                 if (call->status.ok()) {
                     HandleRequestVoteResponse(call);
@@ -24,7 +24,7 @@ void ClientCallbackQueue::AsyncRpcResponseHandler() {
                 delete call;
                 break;
             }
-            case MessageID::AppendEntries: {
+            case RaftMessageID::AppendEntries: {
                 auto* call = static_cast<AsyncClientCall<rpc::AppendEntriesRequest, rpc::AppendEntriesResponse>*>(tag_ptr->call);
                 if (call->status.ok()) {
                     HandleAppendEntriesResponse(call);

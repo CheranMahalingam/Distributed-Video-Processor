@@ -4,6 +4,7 @@
 #include <condition_variable>
 #include <queue>
 #include <mutex>
+#include <memory>
 
 #include "log.h"
 #include "raft.grpc.pb.h"

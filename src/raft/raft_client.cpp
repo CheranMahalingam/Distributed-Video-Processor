@@ -1,8 +1,8 @@
-#include "rpc_client.h"
+#include "raft_client.h"
 
 namespace raft {
 
-RpcClient::RpcClient(const std::string address, const std::vector<std::string>& peer_ids, CompletionQueue& cq)
+RaftClient::RaftClient(const std::string address, const std::vector<std::string>& peer_ids, CompletionQueue& cq)
     : address_(address), cq_(cq) {
     for (auto peer_id:peer_ids) {
         std::shared_ptr<Channel> chan = grpc::CreateChannel(peer_id, grpc::InsecureChannelCredentials());
@@ -10,7 +10,7 @@ RpcClient::RpcClient(const std::string address, const std::vector<std::string>& 
     }
 }
 
-void RpcClient::RequestVote(const std::string peer_id, const rpc::RequestVoteRequest& request) {
+void RaftClient::RequestVote(const std::string peer_id, const rpc::RequestVoteRequest& request) {
     auto* call = new AsyncClientCall<rpc::RequestVoteRequest, rpc::RequestVoteResponse>;
     call->request = request;
 
@@ -20,11 +20,11 @@ void RpcClient::RequestVote(const std::string peer_id, const rpc::RequestVoteReq
 
     auto* tag = new Tag;
     tag->call = (void*)call;
-    tag->id = MessageID::RequestVote;
+    tag->id = RaftMessageID::RequestVote;
     call->response_reader->Finish(&call->reply, &call->status, (void*)tag);
 }
 
-void RpcClient::AppendEntries(const std::string peer_id, const rpc::AppendEntriesRequest& request) {
+void RaftClient::AppendEntries(const std::string peer_id, const rpc::AppendEntriesRequest& request) {
     auto* call = new AsyncClientCall<rpc::AppendEntriesRequest, rpc::AppendEntriesResponse>;
     call->request = request;
 
@@ -34,7 +34,7 @@ void RpcClient::AppendEntries(const std::string peer_id, const rpc::AppendEntrie
 
     auto* tag = new Tag;
     tag->call = (void*)call;
-    tag->id = MessageID::AppendEntries;
+    tag->id = RaftMessageID::AppendEntries;
     call->response_reader->Finish(&call->reply, &call->status, (void*)tag);
 }
 
