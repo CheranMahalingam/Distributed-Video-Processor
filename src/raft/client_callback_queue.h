@@ -41,7 +41,7 @@ private:
 private:
     struct Tag {
         void* call;
-        RaftMessageID id;
+        RpcCommandID id;
     };
 
     std::vector<std::string> peer_ids_;

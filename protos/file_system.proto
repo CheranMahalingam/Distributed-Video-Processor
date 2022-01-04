@@ -2,12 +2,6 @@ syntax = "proto3";
 
 package storage;
 
-service VideoService {
-    rpc UploadVideo (UploadVideoRequest) returns (UploadVideoResponse) {}
-    rpc DownloadVideo (DownloadVideoRequest) returns (DownloadVideoResponse) {}
-    rpc DeleteVideo (DeleteVideoRequest) returns (DeleteVideoResponse) {}
-}
-
 message UploadVideoRequest {
     string id = 1;
     uint32 version = 2;

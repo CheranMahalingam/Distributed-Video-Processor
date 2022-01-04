@@ -4,11 +4,6 @@ package rpc;
 
 import "file_system.proto";
 
-service RaftService {
-    rpc RequestVote (RequestVoteRequest) returns (RequestVoteResponse) {}
-    rpc AppendEntries (AppendEntriesRequest) returns (AppendEntriesResponse) {}
-}
-
 message RequestVoteRequest {
     uint32 term = 1;
     string candidateId = 2;

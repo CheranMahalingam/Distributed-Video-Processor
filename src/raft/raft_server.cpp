@@ -2,54 +2,18 @@
 
 namespace raft {
 
-RaftServer::RaftServer(
-    const std::string address, 
-    const std::vector<std::string>& peer_ids, 
-    std::shared_ptr<ConcensusModule> cm)
-    : cm_(cm) {
-    ServerBuilder builder;
-    builder.AddListeningPort(address, grpc::InsecureServerCredentials());
-    builder.RegisterService(&service_);
-    scq_ = builder.AddCompletionQueue();
-    server_ = builder.BuildAndStart();
+RaftServer::RaftServer() {
 }
 
 RaftServer::~RaftServer() {
-    server_->Shutdown();
-    scq_->Shutdown();
 }
 
-void RaftServer::HandleRPC() {
-    new RequestVoteData{&service_, scq_.get(), cm_.get()};
-    new AppendEntriesData{&service_, scq_.get(), cm_.get()};
-    void* tag;
-    bool ok;
-    while (true) {
-        if (scq_->Next(&tag, &ok) && ok) {
-            auto* tag_ptr = static_cast<Tag*>(tag);
-            switch (tag_ptr->id) {
-                case RaftMessageID::RequestVote: {
-                    static_cast<RequestVoteData*>(tag_ptr->call)->Proceed();
-                    break;
-                }
-                case RaftMessageID::AppendEntries: {
-                    static_cast<AppendEntriesData*>(tag_ptr->call)->Proceed();
-                    break;
-                }
-            }
-        } else {
-            logger(LogLevel::Error) << "RPC call failed";
-        }
-    }
-}
-
-RaftServer::CallData::CallData(rpc::RaftService::AsyncService* service, ServerCompletionQueue* scq, ConcensusModule* cm)
-    : service_(service), scq_(scq), cm_(cm), status_(CallStatus::Create) {
-}
-
-RaftServer::RequestVoteData::RequestVoteData(rpc::RaftService::AsyncService* service, ServerCompletionQueue* scq, ConcensusModule* cm) 
+RaftServer::RequestVoteData::RequestVoteData(
+    server::VideoProcessorService::AsyncService* service,
+    ServerCompletionQueue* scq,
+    ConcensusModule* cm) 
     : CallData{service, scq, cm}, responder_(&ctx_) {
-    tag_.id = RaftMessageID::RequestVote;
+    tag_.id = RpcCommandID::RequestVote;
     tag_.call = this;
     Proceed();
 }
@@ -111,9 +75,12 @@ void RaftServer::RequestVoteData::Proceed() {
     }
 }
 
-RaftServer::AppendEntriesData::AppendEntriesData(rpc::RaftService::AsyncService* service, ServerCompletionQueue* scq, ConcensusModule* cm) 
+RaftServer::AppendEntriesData::AppendEntriesData(
+    server::VideoProcessorService::AsyncService* service,
+    ServerCompletionQueue* scq,
+    ConcensusModule* cm)
     : CallData{service, scq, cm}, responder_(&ctx_) {
-    tag_.id = RaftMessageID::AppendEntries;
+    tag_.id = RpcCommandID::AppendEntries;
     tag_.call = this;
     Proceed();
 }

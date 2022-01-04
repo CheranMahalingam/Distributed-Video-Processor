@@ -10,6 +10,7 @@
 #include "log.h"
 #include "grpc_msg_defs.h"
 #include "raft.grpc.pb.h"
+#include "server.grpc.pb.h"
 
 namespace raft {
 
@@ -30,7 +31,7 @@ public:
 private:
     struct Tag {
         void* call;
-        RaftMessageID id;
+        RpcCommandID id;
     };
 
     template <class RequestType, class ResponseType>
@@ -43,7 +44,7 @@ private:
     };
 
     std::string address_;
-    std::unordered_map<std::string, std::unique_ptr<rpc::RaftService::Stub>> stubs_;
+    std::unordered_map<std::string, std::unique_ptr<server::VideoProcessorService::Stub>> stubs_;
     CompletionQueue& cq_;
 };
 

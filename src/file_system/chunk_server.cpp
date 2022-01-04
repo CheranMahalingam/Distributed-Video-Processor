@@ -2,67 +2,19 @@
 
 namespace file_system {
 
-ChunkServer::ChunkServer(
-    const std::string address,
-    std::shared_ptr<raft::ConcensusModule> cm,
-    std::shared_ptr<ChunkManager> manager)
-    : cm_(cm), manager_(manager)  {
-    ServerBuilder builder;
-    builder.AddListeningPort(address, grpc::InsecureServerCredentials());
-    builder.RegisterService(&service_);
-    scq_ = builder.AddCompletionQueue();
-    server_ = builder.BuildAndStart();
+ChunkServer::ChunkServer() {
 }
 
 ChunkServer::~ChunkServer() {
-    server_->Shutdown();
-    scq_->Shutdown();
-}
-
-void ChunkServer::HandleRPC() {
-    new UploadData{&service_, scq_.get(), cm_.get(), manager_.get()};
-    new DownloadData{&service_, scq_.get(), cm_.get(), manager_.get()};
-    new DeleteData{&service_, scq_.get(), cm_.get(), manager_.get()};
-    void* tag;
-    bool ok;
-    while (true) {
-        if (scq_->Next(&tag, &ok) && ok) {
-            auto* tag_ptr = static_cast<Tag*>(tag);
-            switch (tag_ptr->id) {
-                case VideoMessageID::Upload: {
-                    static_cast<UploadData*>(tag_ptr->call)->Proceed();
-                    break;
-                }
-                case VideoMessageID::Download: {
-                    static_cast<DownloadData*>(tag_ptr->call)->Proceed();
-                    break;
-                }
-                case VideoMessageID::Delete: {
-                    static_cast<DeleteData*>(tag_ptr->call)->Proceed();
-                    break;
-                }
-            }
-        } else {
-            logger(LogLevel::Error) << "RPC call failed";
-        }
-    }
-}
-
-ChunkServer::CallData::CallData(
-    storage::VideoService::AsyncService* service,
-    ServerCompletionQueue* scq,
-    raft::ConcensusModule* cm,
-    ChunkManager* manager)
-    : service_(service), scq_(scq), cm_(cm), manager_(manager), status_(CallStatus::Create) {
 }
 
 ChunkServer::UploadData::UploadData(
-    storage::VideoService::AsyncService* service,
+    server::VideoProcessorService::AsyncService* service,
     ServerCompletionQueue* scq,
     raft::ConcensusModule* cm,
     ChunkManager* manager)
-    : CallData{service, scq, cm, manager}, responder_(&ctx_) {
-    tag_.id = VideoMessageID::Upload;
+    : CallData{service, scq, cm}, manager_(manager), responder_(&ctx_) {
+    tag_.id = RpcCommandID::UploadVideo;
     tag_.call = this;
     Proceed();
 }
@@ -87,6 +39,7 @@ void ChunkServer::UploadData::Proceed() {
             response_.set_success(true);
             status_ = CallStatus::Finish;
             responder_.Finish(response_, Status::OK, (void*)&tag_);
+            break;
         }
         default: {
             delete this;
@@ -95,12 +48,12 @@ void ChunkServer::UploadData::Proceed() {
 }
 
 ChunkServer::DownloadData::DownloadData(
-    storage::VideoService::AsyncService* service,
+    server::VideoProcessorService::AsyncService* service,
     ServerCompletionQueue* scq,
     raft::ConcensusModule* cm,
     ChunkManager* manager)
-    : CallData{service, scq, cm, manager}, responder_(&ctx_) {
-    tag_.id = VideoMessageID::Download;
+    : CallData{service, scq, cm}, manager_(manager), responder_(&ctx_) {
+    tag_.id = RpcCommandID::DownloadVideo;
     tag_.call = this;
     Proceed();
 }
@@ -131,6 +84,7 @@ void ChunkServer::DownloadData::Proceed() {
             response_.set_data(data);
             status_ = CallStatus::Finish;
             responder_.Finish(response_, Status::OK, (void*)&tag_);
+            break;
         }
         default: {
             delete this;
@@ -139,12 +93,12 @@ void ChunkServer::DownloadData::Proceed() {
 }
 
 ChunkServer::DeleteData::DeleteData(
-    storage::VideoService::AsyncService* service,
+    server::VideoProcessorService::AsyncService* service,
     ServerCompletionQueue* scq,
     raft::ConcensusModule* cm,
     ChunkManager* manager)
-    : CallData{service, scq, cm, manager}, responder_(&ctx_) {
-    tag_.id = VideoMessageID::Delete;
+    : CallData{service, scq, cm}, manager_(manager), responder_(&ctx_) {
+    tag_.id = RpcCommandID::DeleteVideo;
     tag_.call = this;
     Proceed();
 }
@@ -166,6 +120,7 @@ void ChunkServer::DeleteData::Proceed() {
             response_.set_success(true);
             status_ = CallStatus::Finish;
             responder_.Finish(response_, Status::OK, (void*)&tag_);
+            break;
         }
         default: {
             delete this;

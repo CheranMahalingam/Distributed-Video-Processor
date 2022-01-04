@@ -1,4 +1,4 @@
-foreach(target raft file_system)
+foreach(target raft file_system server)
     get_filename_component(proto "../protos/${target}.proto" ABSOLUTE)
     get_filename_component(proto_path "${proto}" PATH)
     set(proto_srcs "${PROJECT_SOURCE_DIR}/protogen/${target}.pb.cc")
@@ -40,10 +40,13 @@ add_executable(VideoProcessor
     raft/commit_channel.cpp
     file_system/chunk_manager.cpp
     file_system/chunk_server.cpp
+    server/async_server.cpp
+    server/server_impl.cpp
     main.cpp)
 target_link_libraries(VideoProcessor
     grpc_raft_proto
     grpc_file_system_proto
+    grpc_server_proto
     PkgConfig::LIBAV)
 target_include_directories(VideoProcessor
     PRIVATE
@@ -51,4 +54,5 @@ target_include_directories(VideoProcessor
     raft
     file_system
     processor
+    server
     "${PROJECT_SOURCE_DIR}/protogen")

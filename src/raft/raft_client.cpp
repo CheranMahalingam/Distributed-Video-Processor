@@ -6,7 +6,7 @@ RaftClient::RaftClient(const std::string address, const std::vector<std::string>
     : address_(address), cq_(cq) {
     for (auto peer_id:peer_ids) {
         std::shared_ptr<Channel> chan = grpc::CreateChannel(peer_id, grpc::InsecureChannelCredentials());
-        stubs_[peer_id] = rpc::RaftService::NewStub(chan);
+        stubs_[peer_id] = server::VideoProcessorService::NewStub(chan);
     }
 }
 
@@ -20,7 +20,7 @@ void RaftClient::RequestVote(const std::string peer_id, const rpc::RequestVoteRe
 
     auto* tag = new Tag;
     tag->call = (void*)call;
-    tag->id = RaftMessageID::RequestVote;
+    tag->id = RpcCommandID::RequestVote;
     call->response_reader->Finish(&call->reply, &call->status, (void*)tag);
 }
 
@@ -34,7 +34,7 @@ void RaftClient::AppendEntries(const std::string peer_id, const rpc::AppendEntri
 
     auto* tag = new Tag;
     tag->call = (void*)call;
-    tag->id = RaftMessageID::AppendEntries;
+    tag->id = RpcCommandID::AppendEntries;
     call->response_reader->Finish(&call->reply, &call->status, (void*)tag);
 }
 

@@ -1,15 +1,12 @@
 #ifndef GRPC_MSG_DEFS
 #define GRPC_MSG_DEFS
 
-enum class RaftMessageID {
+enum class RpcCommandID {
+    UploadVideo,
+    DownloadVideo,
+    DeleteVideo,
     RequestVote,
     AppendEntries
-};
-
-enum class VideoMessageID {
-    Upload,
-    Download,
-    Delete
 };
 
 #endif

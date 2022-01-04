@@ -5,7 +5,6 @@
 #include <filesystem>
 #include <memory>
 #include <string>
-#include <sstream>
 #include <vector>
 #include <cmath>
 #include <google/protobuf/util/delimited_message_util.h>

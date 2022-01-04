@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package server;
+
+import "raft.proto";
+import "file_system.proto";
+
+service VideoProcessorService {
+    rpc UploadVideo (storage.UploadVideoRequest) returns (storage.UploadVideoResponse) {}
+    rpc DownloadVideo (storage.DownloadVideoRequest) returns (storage.DownloadVideoResponse) {}
+    rpc DeleteVideo (storage.DeleteVideoRequest) returns (storage.DeleteVideoResponse) {}
+    rpc RequestVote (rpc.RequestVoteRequest) returns (rpc.RequestVoteResponse) {}
+    rpc AppendEntries (rpc.AppendEntriesRequest) returns (rpc.AppendEntriesResponse) {}
+}
