@@ -28,14 +28,14 @@ public:
 
     void WriteToChunk(const storage::Chunk& chunk);
 
-    void DeleteChunks(std::string video_id, int version);
+    void DeleteChunk(const storage::ChunkDeletionIdentifier& id);
 
-private:
     std::string Filename(std::string video_id, int version, int sequence);
 
-    void DeleteFile(std::string path);
-
     int ChunkCount(std::string video_id, int version);
+
+private:
+    void DeleteFile(std::string path);
 
 private:
     std::string address_;

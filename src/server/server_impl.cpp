@@ -11,8 +11,8 @@ ServerImpl::ServerImpl(
     scq_ = builder.AddCompletionQueue();
     server_ = builder.BuildAndStart();
 
-    // raft_server_ = std::make_unique<raft::RaftServer>(cm);
-    // chunk_server_ = std::make_unique<file_system::ChunkServer>(cm, manager);
+    raft_server_ = std::make_unique<raft::RaftServer>();
+    chunk_server_ = std::make_unique<file_system::ChunkServer>();
 }
 
 ServerImpl::~ServerImpl() {

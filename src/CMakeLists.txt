@@ -42,6 +42,7 @@ add_executable(VideoProcessor
     file_system/chunk_server.cpp
     server/async_server.cpp
     server/server_impl.cpp
+    server/test_server.hpp
     main.cpp)
 target_link_libraries(VideoProcessor
     grpc_raft_proto

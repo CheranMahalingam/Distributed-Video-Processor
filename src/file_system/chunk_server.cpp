@@ -33,7 +33,16 @@ void ChunkServer::UploadData::Proceed() {
 
             auto new_chunks = manager_->CreateChunks(request_.id(), request_.version(), request_.data());
             for (auto &chunk:new_chunks) {
-                manager_->WriteToChunk(chunk);
+                rpc::LogEntry entry;
+                entry.mutable_command()->set_id(rpc::CommandType::UPLOAD);
+                entry.mutable_command()->mutable_chunk()->set_data(chunk.data());
+                entry.mutable_command()->mutable_chunk()->mutable_metadata()->set_videoid(chunk.metadata().videoid());
+                entry.mutable_command()->mutable_chunk()->mutable_metadata()->set_version(chunk.metadata().version());
+                entry.mutable_command()->mutable_chunk()->mutable_metadata()->set_sequence(chunk.metadata().sequence());
+                entry.mutable_command()->mutable_chunk()->mutable_metadata()->set_last(chunk.metadata().last());
+                entry.set_term(cm_->current_term());
+
+                cm_->Submit(entry);
             }
 
             response_.set_success(true);
@@ -115,7 +124,17 @@ void ChunkServer::DeleteData::Proceed() {
             logger(LogLevel::Debug) << "Processing DeleteVideo reply...";
             new DeleteData{service_, scq_, cm_, manager_};
 
-            manager_->DeleteChunks(request_.id(), request_.version());
+            int chunk_count = manager_->ChunkCount(request_.id(), request_.version());
+            for (int i = 0; i < chunk_count; i++) {
+                std::string chunk_path = manager_->Filename(request_.id(), request_.version(), i);
+
+                rpc::LogEntry entry;
+                entry.mutable_command()->set_id(rpc::CommandType::DELETE);
+                entry.mutable_command()->mutable_chunkid()->set_path(chunk_path);
+                entry.set_term(cm_->current_term());
+
+                cm_->Submit(entry);
+            }
 
             response_.set_success(true);
             status_ = CallStatus::Finish;

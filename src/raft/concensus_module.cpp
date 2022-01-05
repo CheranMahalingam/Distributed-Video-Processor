@@ -6,7 +6,8 @@ ConcensusModule::ConcensusModule(
     boost::asio::io_context& io_context, 
     const std::string address, 
     const std::vector<std::string>& peer_ids,
-    CompletionQueue& cq)
+    CompletionQueue& cq,
+    std::shared_ptr<file_system::ChunkManager> manager)
     : address_(address),
       peer_ids_(peer_ids),
       election_timer_(io_context),
@@ -15,7 +16,7 @@ ConcensusModule::ConcensusModule(
       state_(ElectionRole::Follower),
       vote_(""),
       votes_received_(0) {
-    channel_ = std::make_unique<raft::CommitChannel>();
+    channel_ = std::make_unique<raft::CommitChannel>(manager);
     snapshot_ = std::make_unique<raft::Snapshot>("../raft_store/" + address + "/");
     rpc_ = std::make_unique<raft::RaftClient>(address, peer_ids, cq);
     log_ = std::make_unique<raft::CommandLog>(peer_ids);
@@ -95,7 +96,7 @@ void ConcensusModule::HeartbeatCallback() {
         rpc_->AppendEntries(peer_id, args);
     }
 
-    Submit(RandomString());
+    // Submit(RandomString());
 
     HeartbeatTimeout();
 }
@@ -158,13 +159,10 @@ void ConcensusModule::CommitEntry(const rpc::LogEntry& entry) {
     channel_->commit_notifier_.notify_one();
 }
 
-void ConcensusModule::Submit(const std::string command) {
+void ConcensusModule::Submit(rpc::LogEntry& entry) {
     if (state_ == ElectionRole::Leader) {
-        rpc::LogEntry new_entry;
-        new_entry.set_term(current_term());
-        // new_entry.set_command(command);
-        log_->AppendLog(new_entry);
-        PersistLogToStorage({new_entry}, true);
+        log_->AppendLog(entry);
+        PersistLogToStorage({entry}, true);
     }
 }
 
@@ -184,14 +182,6 @@ void ConcensusModule::RestoreFromStorage() {
     for (auto peer_id:peer_ids_) {
         log_->set_next_index(peer_id, log_->entries().size());
     }
-}
-
-std::string ConcensusModule::RandomString() {
-    std::string str("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz");
-    std::random_device rd;
-    std::mt19937 generator(rd());
-    std::shuffle(str.begin(), str.end(), generator);
-    return str.substr(0, 32);
 }
 
 void ConcensusModule::set_vote(const std::string vote) {

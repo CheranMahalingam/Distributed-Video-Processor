@@ -2,7 +2,7 @@
 
 namespace raft {
 
-CommitChannel::CommitChannel() {
+CommitChannel::CommitChannel(std::shared_ptr<file_system::ChunkManager> manager) : manager_(manager) {
 }
 
 void CommitChannel::ConsumeEvents() {
@@ -27,10 +27,12 @@ void CommitChannel::ApplyCommit(const rpc::LogEntry& commit) {
     logger(LogLevel::Info) << "Applying commit, term =" << commit.term() << "command =" << commit.command().id();
     switch(commit.command().id()) {
         case rpc::CommandType::UPLOAD: {
-            // TODO: Connect to chunk manager to write chunks
+            manager_->WriteToChunk(commit.command().chunk());
+            break;
         }
         case rpc::CommandType::DELETE: {
-            // TODO: Connect to chunk manager to delete chunks
+            manager_->DeleteChunk(commit.command().chunkid());
+            break;
         }
     }
 }

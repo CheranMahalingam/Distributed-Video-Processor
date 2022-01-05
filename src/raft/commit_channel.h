@@ -6,6 +6,7 @@
 #include <mutex>
 #include <memory>
 
+#include "chunk_manager.h"
 #include "log.h"
 #include "raft.grpc.pb.h"
 
@@ -13,7 +14,7 @@ namespace raft {
 
 class CommitChannel {
 public:
-    CommitChannel();
+    CommitChannel(std::shared_ptr<file_system::ChunkManager> manager);
 
     void ConsumeEvents();
 
@@ -24,6 +25,7 @@ public:
     std::queue<rpc::LogEntry> commit_queue_;
     std::condition_variable commit_notifier_;
     std::mutex queue_mutex_;
+    std::shared_ptr<file_system::ChunkManager> manager_;
 };
 
 }

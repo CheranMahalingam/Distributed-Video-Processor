@@ -6,7 +6,6 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include <mutex>
 #include <tuple>
 #include <random>
 
@@ -14,6 +13,7 @@
 #include "command_log.h"
 #include "commit_channel.h"
 #include "snapshot.h"
+#include "chunk_manager.h"
 #include "log.h"
 #include "raft.grpc.pb.h"
 
@@ -38,7 +38,8 @@ public:
         boost::asio::io_context& io_context, 
         const std::string address,
         const std::vector<std::string>& peer_ids,
-        CompletionQueue& cq);
+        CompletionQueue& cq,
+        std::shared_ptr<file_system::ChunkManager> manager);
 
     void ElectionTimeout(const int term);
 
@@ -48,7 +49,7 @@ public:
 
     void CommitEntry(const rpc::LogEntry& entry);
 
-    void Submit(const std::string command);
+    void Submit(rpc::LogEntry& entry);
 
     void PersistLogToStorage(const std::vector<rpc::LogEntry>& entries, bool append);
 
@@ -79,8 +80,6 @@ private:
     void HeartbeatTimeout();
 
     void RestoreFromStorage();
-
-    std::string RandomString();
 
 public:
     std::unique_ptr<CommitChannel> channel_;
