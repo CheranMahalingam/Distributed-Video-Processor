@@ -10,7 +10,7 @@
 #include <google/protobuf/util/delimited_message_util.h>
 
 #include "log.h"
-#include "file_system.grpc.pb.h"
+#include "raft.grpc.pb.h"
 
 namespace file_system {
 
@@ -22,13 +22,13 @@ class ChunkManager {
 public:
     ChunkManager(std::string address, std::string dir, int chunk_size);
 
-    std::vector<storage::Chunk> CreateChunks(std::string video_id, int version, const std::string& data);
+    std::vector<rpc::Chunk> CreateChunks(std::string video_id, int version, const std::string& data);
 
-    storage::Chunk ReadFromChunk(std::string video_id, int version, int sequence);
+    rpc::Chunk ReadFromChunk(std::string video_id, int version, int sequence);
 
-    void WriteToChunk(const storage::Chunk& chunk);
+    void WriteToChunk(const rpc::Chunk& chunk);
 
-    void DeleteChunk(const storage::ChunkDeletionIdentifier& id);
+    void DeleteChunk(const rpc::ChunkDeletionIdentifier& id);
 
     std::string Filename(std::string video_id, int version, int sequence);
 

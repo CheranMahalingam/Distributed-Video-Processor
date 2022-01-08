@@ -7,14 +7,14 @@ ChunkManager::ChunkManager(std::string address, std::string dir, int chunk_size)
     std::filesystem::create_directories(dir + "/" + address);
 }
 
-std::vector<storage::Chunk> ChunkManager::CreateChunks(std::string video_id, int version, const std::string& data) {
-    std::vector<storage::Chunk> chunks;
+std::vector<rpc::Chunk> ChunkManager::CreateChunks(std::string video_id, int version, const std::string& data) {
+    std::vector<rpc::Chunk> chunks;
     int offset = 0;
     int chunk_count = std::ceil((double)data.size() / (double)max_chunk_size_);
     for (int i = 0; i < chunk_count; i++) {
         std::string chunked_data = data.substr(offset, max_chunk_size_);
 
-        storage::Chunk new_chunk;
+        rpc::Chunk new_chunk;
         new_chunk.mutable_metadata()->set_videoid(video_id);
         new_chunk.mutable_metadata()->set_version(version);
         new_chunk.mutable_metadata()->set_sequence(i);
@@ -27,12 +27,12 @@ std::vector<storage::Chunk> ChunkManager::CreateChunks(std::string video_id, int
     return chunks;
 }
 
-storage::Chunk ChunkManager::ReadFromChunk(std::string video_id, int version, int sequence) {
+rpc::Chunk ChunkManager::ReadFromChunk(std::string video_id, int version, int sequence) {
     std::string chunk_path = Filename(video_id, version, sequence);
     std::ifstream in(chunk_path, std::ios::binary);
     IstreamInputStream chunk_stream(&in);
 
-    storage::Chunk chunk;
+    rpc::Chunk chunk;
     ParseDelimitedFromZeroCopyStream(&chunk, &chunk_stream, nullptr);
 
     logger(LogLevel::Debug) << "Chunk read from" << chunk_path;
@@ -41,7 +41,7 @@ storage::Chunk ChunkManager::ReadFromChunk(std::string video_id, int version, in
     return chunk;
 }
 
-void ChunkManager::WriteToChunk(const storage::Chunk& chunk) {
+void ChunkManager::WriteToChunk(const rpc::Chunk& chunk) {
     std::string chunk_path = Filename(chunk.metadata().videoid(), chunk.metadata().version(), chunk.metadata().sequence());
     std::string dir_path = dir_ + "/" + address_ + "/" + chunk.metadata().videoid() + "/" + std::to_string(chunk.metadata().version());
     std::filesystem::create_directories(dir_path);
@@ -52,7 +52,7 @@ void ChunkManager::WriteToChunk(const storage::Chunk& chunk) {
     out.close();
 }
 
-void ChunkManager::DeleteChunk(const storage::ChunkDeletionIdentifier& id) {
+void ChunkManager::DeleteChunk(const rpc::ChunkDeletionIdentifier& id) {
     std::string chunk_path = id.path();
     DeleteFile(chunk_path);
 }

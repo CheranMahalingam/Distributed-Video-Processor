@@ -2,8 +2,6 @@ syntax = "proto3";
 
 package rpc;
 
-import "file_system.proto";
-
 message RequestVoteRequest {
     uint32 term = 1;
     string candidateId = 2;
@@ -48,7 +46,23 @@ enum CommandType {
 message Command {
     CommandType id = 1;
     oneof Args {
-        storage.Chunk chunk = 2;
-        storage.ChunkDeletionIdentifier chunkId = 3;
+        Chunk chunk = 2;
+        ChunkDeletionIdentifier chunkId = 3;
     }
+}
+
+message Chunk {
+    ChunkMetadata metadata = 1;
+    bytes data = 2;
+}
+
+message ChunkMetadata {
+    string videoId = 1;
+    uint32 version = 2;
+    uint32 sequence = 3;
+    bool last = 4;
+}
+
+message ChunkDeletionIdentifier {
+    string path = 1;
 }

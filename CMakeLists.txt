@@ -34,36 +34,36 @@ else()
     FetchContent_MakeAvailable(protobuf)
 endif()
 
-option(USE_SYSTEM_GRPC "Use system installed gRPC" OFF)
+option(USE_SYSTEM_GRPC "Use system installed gRPC" ON)
 if(USE_SYSTEM_GRPC)
-    find_package(gRPC CONFIG REQUIRED)
+    find_package(gRPC REQUIRED)
 else()
     include(FetchContent)
     FetchContent_Declare(
         gRPC
         GIT_REPOSITORY https://github.com/grpc/grpc
-        GIT_TAG        v1.41.1
+        GIT_TAG        v1.43.0
     )
     set(FETCHCONTENT_QUIET OFF)
     FetchContent_MakeAvailable(gRPC)
 endif()
 
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
-    libavdevice
-    libavfilter
-    libavformat
-    libavcodec
-    libavutil)
+# find_package(PkgConfig REQUIRED)
+# pkg_check_modules(LIBAV REQUIRED IMPORTED_TARGET
+#     libavdevice
+#     libavfilter
+#     libavformat
+#     libavcodec
+#     libavutil)
 
 message(STATUS "Using boost ${Boost_VERSION}")
 message(STATUS "Using protobuf ${Protobuf_VERSION}")
 message(STATUS "Using gRPC ${gRPC_VERSION}")
 
-include_directories("${CMAKE_CURRENT_BINARY_DIR}")
+include_directories("${CMAKE_BINARY_DIR}")
 
-set(_PROTOBUF_PROTOC $<TARGET_FILE:protoc>)
-set(_GRPC_CPP_PLUGIN_EXECUTABLE $<TARGET_FILE:grpc_cpp_plugin>)
+set(_PROTOBUF_PROTOC $<TARGET_FILE:protobuf::protoc>)
+set(_GRPC_CPP_PLUGIN_EXECUTABLE $<TARGET_FILE:gRPC::grpc_cpp_plugin>)
 
 file(MAKE_DIRECTORY "${PROJECT_SOURCE_DIR}/protogen")
 

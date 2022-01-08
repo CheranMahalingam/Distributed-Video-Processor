@@ -1,10 +1,10 @@
-foreach(target raft file_system server)
+foreach(target raft server file_system)
     get_filename_component(proto "../protos/${target}.proto" ABSOLUTE)
     get_filename_component(proto_path "${proto}" PATH)
-    set(proto_srcs "${PROJECT_SOURCE_DIR}/protogen/${target}.pb.cc")
     set(proto_hdrs "${PROJECT_SOURCE_DIR}/protogen/${target}.pb.h")
-    set(grpc_srcs "${PROJECT_SOURCE_DIR}/protogen/${target}.grpc.pb.cc")
+    set(proto_srcs "${PROJECT_SOURCE_DIR}/protogen/${target}.pb.cc")
     set(grpc_hdrs "${PROJECT_SOURCE_DIR}/protogen/${target}.grpc.pb.h")
+    set(grpc_srcs "${PROJECT_SOURCE_DIR}/protogen/${target}.grpc.pb.cc")
 
     add_custom_command(
         OUTPUT "${proto_srcs}" "${proto_hdrs}" "${grpc_srcs}" "${grpc_hdrs}"
@@ -23,10 +23,10 @@ foreach(target raft file_system server)
         ${proto_hdrs})
 
     target_link_libraries("grpc_${target}_proto"
-        grpc++_reflection
-        grpc++
-        libprotoc
-        libprotobuf)
+        gRPC::grpc++_reflection
+        gRPC::grpc++
+        protobuf::libprotoc
+        protobuf::libprotobuf)
 endforeach()
 
 add_executable(VideoProcessor
@@ -45,10 +45,10 @@ add_executable(VideoProcessor
     server/test_server.hpp
     main.cpp)
 target_link_libraries(VideoProcessor
-    grpc_raft_proto
     grpc_file_system_proto
     grpc_server_proto
-    PkgConfig::LIBAV)
+    grpc_raft_proto)
+    # PkgConfig::LIBAV
 target_include_directories(VideoProcessor
     PRIVATE
     common

@@ -30,19 +30,3 @@ message DeleteVideoRequest {
 message DeleteVideoResponse {
     bool success = 1;
 }
-
-message Chunk {
-    ChunkMetadata metadata = 1;
-    bytes data = 2;
-}
-
-message ChunkMetadata {
-    string videoId = 1;
-    uint32 version = 2;
-    uint32 sequence = 3;
-    bool last = 4;
-}
-
-message ChunkDeletionIdentifier {
-    string path = 1;
-}
