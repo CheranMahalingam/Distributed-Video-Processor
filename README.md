@@ -1,25 +1,21 @@
 # Distributed-Video-Processor
 A video storage system designed using the [raft](https://raft.github.io/) protocol.
 
-# Building
-Prerequisites:
-- boost >=1.71.0
-- protobuf >=3.6.0
-- grpc >=1.41.0
-- ffmpeg >=4.2.4
-
-> Note: Currently only compiles on *nix based systems
-
-Run
-```
-cmake -S . -B build
-cmake --build build
-```
-
 # Usage
-For each server run the executable and specify arguments for the addresses of the servers. For instance,
+Prerequisites:
+- docker >= 20.10.5
+- docker-compose >= 1.29.0
+
+To start a three node raft cluster run,
 ```
-cd build/bin
-./VideoProcessor 127.0.0.1:3001 127.0.0.1:3002 127.0.0.1:3003
+docker-compose up
 ```
-will start a server at `127.0.0.1:3001` and send requests to `127.0.0.1:3002` and `127.0.0.1:3003`
+To stop the cluster run,
+```
+docker-compose down
+```
+To remove the raft logs and videos persisted to disk run,
+```
+chmod +x clean.sh
+./clean.sh
+```

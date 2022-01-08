@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
     }
 
     CompletionQueue cq;
-    std::shared_ptr<file_system::ChunkManager> manager(std::make_shared<file_system::ChunkManager>(address, "../data", 20));
+    std::shared_ptr<file_system::ChunkManager> manager(std::make_shared<file_system::ChunkManager>(address, "/data", 20));
     std::shared_ptr<raft::ConcensusModule> cm(std::make_shared<raft::ConcensusModule>(io, address, peer_ids, cq, manager)); 
     std::unique_ptr<ServerImpl> impl(std::make_unique<ServerImpl>(address, cm, manager));
     std::unique_ptr<raft::ClientCallbackQueue> reply_queue(std::make_unique<raft::ClientCallbackQueue>(peer_ids, cm, cq));

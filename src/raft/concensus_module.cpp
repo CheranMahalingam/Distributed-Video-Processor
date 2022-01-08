@@ -17,7 +17,7 @@ ConcensusModule::ConcensusModule(
       vote_(""),
       votes_received_(0) {
     channel_ = std::make_unique<raft::CommitChannel>(manager);
-    snapshot_ = std::make_unique<raft::Snapshot>("../raft_store/" + address + "/");
+    snapshot_ = std::make_unique<raft::Snapshot>("/snapshot/" + address + "/");
     rpc_ = std::make_unique<raft::RaftClient>(address, peer_ids, cq);
     log_ = std::make_unique<raft::CommandLog>(peer_ids);
 

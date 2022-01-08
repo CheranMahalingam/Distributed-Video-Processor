@@ -28,6 +28,3 @@ FROM ubuntu AS runtime
 COPY --from=builder /usr/src/build/bin /usr/src/app
 WORKDIR /usr/src/app
 RUN ldconfig
-
-EXPOSE 3001
-CMD ["./VideoProcessor", "127.0.0.1:3001", "127.0.0.1:3002"]

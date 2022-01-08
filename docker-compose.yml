@@ -1,0 +1,45 @@
+version: "3.8"
+services:
+  raft_node_1:
+    container_name: raft_node_1
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ./VideoProcessor raft_node_1:3001 raft_node_2:3002 raft_node_3:3003
+    volumes:
+      - snapshot_1:/snapshot
+      - data_1:/data
+    ports:
+      - 3001:3001
+    restart: unless-stopped
+  raft_node_2:
+    container_name: raft_node_2
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ./VideoProcessor raft_node_2:3002 raft_node_1:3001 raft_node_3:3003
+    volumes:
+      - snapshot_2:/snapshot
+      - data_2:/data
+    ports:
+      - 3002:3002
+    restart: unless-stopped
+  raft_node_3:
+    container_name: raft_node_3
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ./VideoProcessor raft_node_3:3003 raft_node_2:3002 raft_node_1:3001
+    volumes:
+      - snapshot_3:/snapshot
+      - data_3:/data
+    ports:
+      - 3003:3003
+    restart: unless-stopped
+volumes:
+  snapshot_1:
+  snapshot_2:
+  snapshot_3:
+  data_1:
+  data_2:
+  data_3:
