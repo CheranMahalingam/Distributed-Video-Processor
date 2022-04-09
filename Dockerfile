@@ -1,4 +1,4 @@
-FROM ubuntu AS builder
+FROM ubuntu:latest AS builder
 
 # Prevent interactive tool from blocking package installations
 ENV DEBIAN_FRONTEND=noninteractive
@@ -23,7 +23,7 @@ WORKDIR /usr/src
 RUN cmake -S . -B build
 RUN cmake --build build
 
-FROM ubuntu AS runtime
+FROM ubuntu:latest AS runtime
 
 COPY --from=builder /usr/src/build/bin /usr/src/app
 WORKDIR /usr/src/app

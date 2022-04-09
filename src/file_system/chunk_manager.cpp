@@ -3,11 +3,12 @@
 namespace file_system {
 
 ChunkManager::ChunkManager(std::string address, std::string dir, int chunk_size) 
-    : address_(address), dir_(dir), max_chunk_size_(chunk_size) {
+    : address_(address), dir_(dir), max_chunk_size_(chunk_size), lock_(std::make_unique<LockManager>()) {
     std::filesystem::create_directories(dir + "/" + address);
 }
 
-std::vector<rpc::Chunk> ChunkManager::CreateChunks(std::string video_id, int version, const std::string& data) {
+std::vector<rpc::Chunk> ChunkManager::CreateChunks(std::string video_id, int version, const std::string& data)
+    : lock_(std::make_unique<LockManager>()) {
     std::vector<rpc::Chunk> chunks;
     int offset = 0;
     int chunk_count = std::ceil((double)data.size() / (double)max_chunk_size_);
@@ -29,14 +30,18 @@ std::vector<rpc::Chunk> ChunkManager::CreateChunks(std::string video_id, int ver
 
 rpc::Chunk ChunkManager::ReadFromChunk(std::string video_id, int version, int sequence) {
     std::string chunk_path = Filename(video_id, version, sequence);
+
+    lock_->FetchLock(chunk_path, LockManager::LockType::Read);
+
     std::ifstream in(chunk_path, std::ios::binary);
     IstreamInputStream chunk_stream(&in);
-
     rpc::Chunk chunk;
     ParseDelimitedFromZeroCopyStream(&chunk, &chunk_stream, nullptr);
 
     logger(LogLevel::Debug) << "Chunk read from" << chunk_path;
     in.close();
+
+    lock_->Unlock(chunk_path, LockManager::LockType::Read);
 
     return chunk;
 }
@@ -45,11 +50,16 @@ void ChunkManager::WriteToChunk(const rpc::Chunk& chunk) {
     std::string chunk_path = Filename(chunk.metadata().videoid(), chunk.metadata().version(), chunk.metadata().sequence());
     std::string dir_path = dir_ + "/" + address_ + "/" + chunk.metadata().videoid() + "/" + std::to_string(chunk.metadata().version());
     std::filesystem::create_directories(dir_path);
+
+    lock_->FetchLock(chunk_path, LockManager::LockType::Write);
+
     std::ofstream out(chunk_path, std::ios::binary);
     SerializeDelimitedToOstream(chunk, &out);
 
     logger(LogLevel::Debug) << "Chunk written to" << chunk_path;
     out.close();
+
+    lock_->Unlock(chunk_path, LockManager::LockType::Write);
 }
 
 void ChunkManager::DeleteChunk(const rpc::ChunkDeletionIdentifier& id) {
@@ -58,11 +68,15 @@ void ChunkManager::DeleteChunk(const rpc::ChunkDeletionIdentifier& id) {
 }
 
 void ChunkManager::DeleteFile(std::string path) {
+    lock_->FetchLock(path, LockManager::LockType::Delete);
+
     if (std::filesystem::remove(path)) {
         logger(LogLevel::Debug) << path << "chunk deleted";
     } else {
         logger(LogLevel::Info) << "Unable to find chunk" << path;
     }
+
+    lock_->Unlock(path, LockManager::LockType::Delete);
 }
 
 std::string ChunkManager::Filename(std::string video_id, int version, int sequence) {

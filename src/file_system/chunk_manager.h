@@ -9,6 +9,7 @@
 #include <cmath>
 #include <google/protobuf/util/delimited_message_util.h>
 
+#include "lock_manager.h"
 #include "log.h"
 #include "raft.grpc.pb.h"
 
@@ -41,6 +42,7 @@ private:
     std::string address_;
     std::string dir_;
     int max_chunk_size_;
+    std::unique_ptr<LockManager> lock_;
 };
 
 }
